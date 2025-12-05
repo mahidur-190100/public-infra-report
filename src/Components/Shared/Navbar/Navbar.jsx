@@ -1,14 +1,18 @@
 import React from 'react'
-
+import logo from '../../../assets/logo.png'
+import { NavLink } from 'react-router-dom'
 const Navbar = () => {
     const links = <>
-        <li><a>Item 1</a></li>
-        <li><a>Item 3</a></li>
+        <li><NavLink to="/"> Home </NavLink></li>
+        <li><NavLink to=""> All Issue </NavLink></li>
+        <li><NavLink to=""> About </NavLink></li>
+        <li><NavLink to=""> Contact Us </NavLink></li>
+        
 
     </>
     return (
         <div>
-            <div className="navbar bg-base-100 shadow-sm">
+            <div className="navbar bg-base-300 shadow-sm">
                 <div className="navbar-start">
                     <div className="dropdown">
                         <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -16,11 +20,19 @@ const Navbar = () => {
                         </div>
                         <ul
                             tabIndex="-1"
-                            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+                            className="menu menu-sm dropdown-content bg-base-300 rounded-box z-1 mt-3 w-52 p-2 shadow">
                             {links}
                         </ul>
                     </div>
-                    <a className="btn btn-ghost text-xl">daisyUI</a>
+                    {/* Logo + website name */}
+                    <a className="btn btn-ghost text-xl gap-2">
+                        <img
+                            src={logo}
+                            alt="Public Infra Report logo"
+                            className="h-10 w-10 object-contain "
+                        />
+                        Public Infra Report
+                    </a>
                 </div>
                 <div className="navbar-center hidden lg:flex">
                     <ul className="menu menu-horizontal px-1">

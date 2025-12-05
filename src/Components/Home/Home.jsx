@@ -1,12 +1,15 @@
 import React from 'react'
 import Navbar from '../Shared/Navbar/Navbar'
 import Footer from '../Shared/Footer/Footer'
+import Banner from '../Banner/Banner'
+import HowItWorksSimple from '../Banner/HowItWorksSimple'
 
 const Home = () => {
   return (
     <div>
         <Navbar></Navbar>
-        Home is this.
+        <Banner> </Banner>
+        <HowItWorksSimple> </HowItWorksSimple>
         <Footer> </Footer>
         </div>
   )
