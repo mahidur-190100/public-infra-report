@@ -1,16 +1,25 @@
 import React from 'react'
 import logo from '../../../assets/logo.png'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
+import useAuth from '../../../Hooks/useAuth'
 
 const Navbar = () => {
+    const { user, logout } = useAuth();
+
+    const handleLogout = () => {
+        logout()
+            .then()
+            .catch(error => {
+                console.log(error.message);
+            });
+    }; // <-- Added closing bracket and semicolon here
+
     const links = <>
         <li><NavLink to="/">Home</NavLink></li>
         <li><NavLink to="/issues">Reported Issues</NavLink></li>
         <li><NavLink to="/about">About</NavLink></li>
         <li><NavLink to="/contact">Contact Us</NavLink></li>
     </>
-
-    const isLoggedIn = false; // Change this based on your auth state
 
     return (
         <div className="w-full">
@@ -44,33 +53,39 @@ const Navbar = () => {
                     </ul>
                 </div>
                 <div className="navbar-end gap-1 sm:gap-2">
-                    {isLoggedIn ? (
-                        // User is logged in - show profile and logout
+                    {user ? (
                         <>
                             <div className="dropdown dropdown-end">
                                 <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar p-1">
-                                    <div className="w-8 sm:w-10 rounded-full bg-white flex items-center justify-center">
-                                        <span className="text-blue-600 font-bold text-sm sm:text-base">U</span>
-                                    </div>
+                                    {user.photoURL ? (
+                                        <img
+                                            src={user.photoURL}
+                                            alt={user.displayName || 'User'}
+                                            className="w-8 sm:w-10 rounded-full border-2 border-white"
+                                            referrerPolicy="no-referrer"
+                                        />
+                                    ) : (
+                                        <div className="w-8 sm:w-10 rounded-full bg-white flex items-center justify-center">
+                                            <span className="text-blue-600 font-bold text-sm sm:text-base">
+                                                {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <ul
                                     tabIndex={0}
                                     className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-                                    <li>
-                                        <a className="justify-between">
-                                            Profile
-                                            <span className="badge">Premium</span>
-                                        </a>
+                                    <li className="px-4 py-2 border-b">
+                                        <div className="font-semibold">{user.displayName}</div>
+                                        <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                     </li>
                                     <li><a>My Reports</a></li>
                                     <li><a>Settings</a></li>
                                     <li><hr /></li>
-                                    <li><a className="text-red-600">Logout</a></li>
+                                    <li><a onClick={handleLogout} className="text-red-600 cursor-pointer">Logout</a></li>
                                 </ul>
                             </div>
-                            <button className="btn btn-error text-white hover:bg-red-700 btn-xs sm:btn-sm">
-                                Logout
-                            </button>
+                           
                         </>
                     ) : (
                         // User is not logged in - show login/signup
@@ -86,7 +101,7 @@ const Navbar = () => {
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
-export default Navbar
+export default Navbar;
