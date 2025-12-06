@@ -1,83 +1,205 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form';
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import useAuth from '../../Hooks/useAuth';
+import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
 
 const Signup = () => {
-    const {register,handleSubmit, formState:{errors}}= useForm();
-    const {registerUser}= useAuth();
-    const handleSignup =(data)=>{
-        // console.log(data);
+    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { registerUser, updateUserProfile, logout } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    
+    const handleSignup = (data) => {
+        setLoading(true);
+        const profileImg = data.file[0];
+        
         registerUser(data.email, data.password)
-        .then(result=>{
-            console.log(result.user);   
-        })
-        .catch(error=>{
-            console.error(error);
-        })
-    }
+            .then(result => {
+                console.log(result.user);
+
+                // store the image in form data
+                const formdata = new FormData();
+                formdata.append('image', profileImg);
+
+                const imageURL = `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_image_host}`;
+
+                axios.post(imageURL, formdata)
+                    .then(res => {
+                        console.log("after upload", res.data.data.display_url);
+
+                        const userProfile = {
+                            displayName: `${data['First Name']} ${data['Last Name']}`,
+                            photoURL: res.data.data.display_url 
+                        };
+
+                        updateUserProfile(userProfile)
+                            .then(() => {
+                                toast.success('Account created successfully!');
+
+                                // 🚀 LOGOUT USER IMMEDIATELY AFTER SIGNUP  
+                                logout().then(() => {
+                                    setTimeout(() => {
+                                        navigate('/login');
+                                    }, 1500);
+                                });
+
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                toast.error('Failed to update profile!');
+                                setLoading(false);
+                            });
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        toast.error('Failed to upload image!');
+                        setLoading(false);
+                    });
+            })
+            .catch(error => {
+                console.error(error);
+                toast.error(error.message || 'Failed to create account!');
+                setLoading(false);
+            });
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
+            <Toaster 
+                position="top-center"
+                toastOptions={{
+                    duration: 3000,
+                    style: { background: '#363636', color: '#fff' },
+                    success: {
+                        duration: 2000,
+                        iconTheme: { primary: '#4ade80', secondary: '#fff' },
+                    },
+                }}
+            />
+            
             <div className="card bg-white shadow-2xl w-full max-w-md">
                 <div className="card-body p-8">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">Join Public Infrastructure Report</h1>
-                        <p className="text-gray-600">Create an account to report infrastructure issues</p>
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                            Join Public Infrastructure Report
+                        </h1>
+                        <p className="text-gray-600">
+                            Create an account to report infrastructure issues
+                        </p>
                     </div>
 
-                    <form onSubmit={handleSubmit(handleSignup)}
-                     className="space-y-4">
+                    <form onSubmit={handleSubmit(handleSignup)} className="space-y-4">
                         <fieldset className="fieldset">
                             {/* Name Fields */}
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <label className="label">First Name</label>
-                                    <input type="text" {...register('First Name')} className="input" placeholder="First Name" />
+                                    <input 
+                                        type="text" 
+                                        {...register('First Name', { required: true })} 
+                                        className="input" 
+                                        placeholder="First Name" 
+                                    />
+                                    {errors['First Name'] && (
+                                        <p className="text-red-500 text-xs mt-1">First name is required</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="label">Last Name</label>
-                                    <input type="text" {...register('Last Name')} className="input" placeholder="Last Name" />
+                                    <input 
+                                        type="text" 
+                                        {...register('Last Name', { required: true })} 
+                                        className="input" 
+                                        placeholder="Last Name" 
+                                    />
+                                    {errors['Last Name'] && (
+                                        <p className="text-red-500 text-xs mt-1">Last name is required</p>
+                                    )}
                                 </div>
                             </div>
-                            {/* emails */}
-                            <label className="label">Email</label>
-                            <input type="email"{...register('email', {required: true})} className="input" placeholder="Email" />
-                            {errors.email?.type === 'required' && <p className="text-red-500">This field is required</p>}
-                            
-                            <label className="label">Phone Number</label>
-                            <input type="tel" className="input" placeholder="Phone Number" />
 
-                            {/* passowrd */}
+                            {/* Email */}
+                            <label className="label">Email</label>
+                            <input 
+                                type="email" 
+                                {...register('email', { required: true })} 
+                                className="input" 
+                                placeholder="Email" 
+                            />
+                            {errors.email && (
+                                <p className="text-red-500 text-xs mt-1">Email is required</p>
+                            )}
+
+                            {/* Photo */}
+                            <label className="label">Profile Photo</label>
+                            <input 
+                                type="file" 
+                                {...register('file', { required: true })} 
+                                className="file-input file-input-bordered w-full" 
+                                accept="image/*"
+                            />
+                            {errors.file && (
+                                <p className="text-red-500 text-xs mt-1">Profile photo is required</p>
+                            )}
+
+                            {/* Phone Optional */}
+                            <label className="label">Phone Number (Optional)</label>
+                            <input 
+                                type="tel" 
+                                {...register('phone')} 
+                                className="input" 
+                                placeholder="Phone Number" 
+                            />
+
+                            {/* Password */}
                             <label className="label">Password</label>
-                            <input type="password"{...register('password', {required: true, minLength: 8, pattern:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/})} className="input" placeholder="Password" />
-                            {
-                                errors.password?.type === 'required' && <p className="text-red-500">This field is required</p>
-                            }
-                            {
-                                errors.password?.type === 'minLength' && <p className="text-red-500">Password must be at least 8 characters</p>
-                            }
-                            {
-                                errors.password?.type === 'pattern' && <p className="text-red-500">Password must be 8-20 characters and include at least one uppercase letter, one lowercase letter, one number, and one special character.</p>
-                            }
+                            <input 
+                                type="password" 
+                                {...register('password', { 
+                                    required: true, 
+                                    minLength: 8, 
+                                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/ 
+                                })}
+                                className="input" 
+                                placeholder="Password" 
+                            />
+                            {errors.password?.type === 'required' && (
+                                <p className="text-red-500 text-xs mt-1">Password is required</p>
+                            )}
+                            {errors.password?.type === 'minLength' && (
+                                <p className="text-red-500 text-xs mt-1">Password must be at least 8 characters</p>
+                            )}
+                            {errors.password?.type === 'pattern' && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    Must include uppercase, lowercase, number, special character
+                                </p>
+                            )}
                         </fieldset>
 
-
-                        <button type="submit" className="btn btn-primary w-full mt-4">
-                            Create Account
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary w-full mt-4"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="loading loading-spinner"></span>
+                                    Creating Account...
+                                </>
+                            ) : 'Create Account'}
                         </button>
                     </form>
 
                     <div className="divider">OR</div>
 
-                    <div className="space-y-3">
-                        <button className="btn btn-outline w-full gap-2">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
-                            </svg>
-                            Sign up with Google
-                        </button>
-                    </div>
+                    <button className="btn btn-outline w-full gap-2">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2 C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
+                        </svg>
+                        Sign up with Google
+                    </button>
 
                     <div className="text-center mt-6">
                         <p className="text-gray-600">
@@ -90,7 +212,7 @@ const Signup = () => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default Signup
+export default Signup;

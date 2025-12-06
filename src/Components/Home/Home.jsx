@@ -1,6 +1,9 @@
 import React from 'react'
 import Banner from '../Banner/Banner'
 import HowItWorksSimple from '../Banner/HowItWorksSimple'
+import ReportGuide from './ReportGuide'
+import DepartmentLeaderboard from './SimpleDepartmentCards'
+import SimpleDepartmentCards from './SimpleDepartmentCards'
 
 const Home = () => {
   return (
@@ -11,8 +14,11 @@ const Home = () => {
           <h2>Welcome to the website</h2>
         </div>
         <Banner> </Banner>
-        </main>
+      
          <HowItWorksSimple> </HowItWorksSimple>
+         <ReportGuide> </ReportGuide>
+         <SimpleDepartmentCards> </SimpleDepartmentCards>
+           </main>
     </div>
   )
 }
