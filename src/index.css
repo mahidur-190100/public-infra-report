@@ -1,27 +1,4 @@
 
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap'); */
-@import url('https://fonts.googleapis.com/css2?family=Science+Gothic:wght@100..900&display=swap');
-
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* inter-font {
-  font-family: "Inter", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-} */
-
-science-gothic {
-  font-family: "Science Gothic", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-  font-variation-settings:
-    "slnt" 0,
-    "wdth" 100,
-    "CTRS" 0;
-}
-
-/* Apply to root elements */
-html, body {
-  @apply science-gothic;
-}

@@ -1,46 +1,88 @@
 import React from 'react'
 import logo from '../../../assets/logo.png'
 import { NavLink } from 'react-router-dom'
+
 const Navbar = () => {
     const links = <>
-        <li><NavLink to="/"> Home </NavLink></li>
-        <li><NavLink to=""> All Issue </NavLink></li>
-        <li><NavLink to=""> About </NavLink></li>
-        <li><NavLink to=""> Contact Us </NavLink></li>
-        
-
+        <li><NavLink to="/">Home</NavLink></li>
+        <li><NavLink to="/issues">Reported Issues</NavLink></li>
+        <li><NavLink to="/about">About</NavLink></li>
+        <li><NavLink to="/contact">Contact Us</NavLink></li>
     </>
+
+    const isLoggedIn = false; // Change this based on your auth state
+
     return (
-        <div>
-            <div className="navbar bg-base-300 shadow-sm">
+        <div className="w-full">
+            <div className="navbar bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg px-2 sm:px-4">
                 <div className="navbar-start">
                     <div className="dropdown">
-                        <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
+                        <div tabIndex={0} role="button" className="btn btn-ghost text-white lg:hidden p-1 sm:p-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
+                            </svg>
                         </div>
                         <ul
                             tabIndex="-1"
-                            className="menu menu-sm dropdown-content bg-base-300 rounded-box z-1 mt-3 w-52 p-2 shadow">
+                            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                             {links}
                         </ul>
                     </div>
                     {/* Logo + website name */}
-                    <a className="btn btn-ghost text-xl gap-2">
+                    <NavLink to="/" className="btn btn-ghost text-white hover:bg-blue-700 p-2">
                         <img
                             src={logo}
                             alt="Public Infra Report logo"
-                            className="h-10 w-10 object-contain "
+                            className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
                         />
-                        Public Infra Report
-                    </a>
+                        <span className="font-bold text-base sm:text-xl">Public Infra Report</span>
+                    </NavLink>
                 </div>
                 <div className="navbar-center hidden lg:flex">
-                    <ul className="menu menu-horizontal px-1">
+                    <ul className="menu menu-horizontal px-1 text-white">
                         {links}
                     </ul>
                 </div>
-                <div className="navbar-end">
-                    <a className="btn">Button</a>
+                <div className="navbar-end gap-1 sm:gap-2">
+                    {isLoggedIn ? (
+                        // User is logged in - show profile and logout
+                        <>
+                            <div className="dropdown dropdown-end">
+                                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar p-1">
+                                    <div className="w-8 sm:w-10 rounded-full bg-white flex items-center justify-center">
+                                        <span className="text-blue-600 font-bold text-sm sm:text-base">U</span>
+                                    </div>
+                                </div>
+                                <ul
+                                    tabIndex={0}
+                                    className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+                                    <li>
+                                        <a className="justify-between">
+                                            Profile
+                                            <span className="badge">Premium</span>
+                                        </a>
+                                    </li>
+                                    <li><a>My Reports</a></li>
+                                    <li><a>Settings</a></li>
+                                    <li><hr /></li>
+                                    <li><a className="text-red-600">Logout</a></li>
+                                </ul>
+                            </div>
+                            <button className="btn btn-error text-white hover:bg-red-700 btn-xs sm:btn-sm">
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        // User is not logged in - show login/signup
+                        <>
+                            <NavLink to="/login" className="btn btn-outline btn-primary text-white border-white hover:bg-white hover:text-blue-600 btn-xs sm:btn-sm px-2 sm:px-4">
+                                Login
+                            </NavLink>
+                            <NavLink to="/signup" className="btn btn-primary text-white bg-blue-500 hover:bg-blue-700 btn-xs sm:btn-sm px-2 sm:px-4">
+                                Sign Up
+                            </NavLink>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
