@@ -7,6 +7,7 @@ import Login from "../Login/Login";
 import Signup from "../SignUp/Signup";
 import About from "../About/About";
 import ContactUs from "../ContactUs/ContactUs";
+import AllIssues from "../AllIssues/AllIssues";
 
 
 export const router = createBrowserRouter([
@@ -17,6 +18,11 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <Home />
+      },
+      {
+        path: "/issues",
+        element: <AllIssues />,
+        loader: () => fetch('http://localhost:3000/issues')
       },
       {
         path: "/about",
