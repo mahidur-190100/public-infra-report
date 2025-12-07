@@ -5,12 +5,21 @@ import Footer from '../../Shared/Footer/Footer'
 
 const HomeLayout = () => {
   return (
-    <div >
-        <Navbar>    </Navbar>
-        <main> 
-            <Outlet>    </Outlet>
+    <div className="min-h-screen flex flex-col">
+        {/* Navbar - Full width */}
+        <div className="w-full">
+          <Navbar />
+        </div>
+        
+        {/* Main content with side spacing */}
+        <main className="max-w-7xl mx-auto flex-grow px-4 sm:px-6 lg:px-8 py-8"> 
+            <Outlet />
         </main>
-        <Footer> </Footer>
+        
+        {/* Footer - Full width */}
+        <div className="w-full">
+          <Footer />
+        </div>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import Signup from "../SignUp/Signup";
 import About from "../About/About";
 import ContactUs from "../ContactUs/ContactUs";
 import AllIssues from "../AllIssues/AllIssues";
+import IssueDetails from "../IssueDetails.jsx/IssueDetails";
 
 
 export const router = createBrowserRouter([
@@ -25,6 +26,12 @@ export const router = createBrowserRouter([
         loader: () => fetch('http://localhost:3000/issues')
       },
       {
+        path: "issues/:id",
+        element: <IssueDetails />,
+        loader: ({params}) => fetch(`http://localhost:3000/issues/${params.id}`)
+      },
+
+      {
         path: "/about",
         element: <About />
       },
@@ -40,12 +47,12 @@ export const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login> </Login>
-       
+
       },
       {
         path: "/signup",
         element: <Signup> </Signup>
-       
+
       }
     ]
   }

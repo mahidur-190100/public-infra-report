@@ -18,12 +18,25 @@ import {
   FaChair,
   FaTasks
 } from 'react-icons/fa';
+import { NavLink } from 'react-router-dom';
 
 const IssueCard = ({ issue }) => {
-  const handleViewDetails = () => {
-    // Navigate to issue details page
-    console.log('View details for:', issue?._id);
-  };
+  // Destructure _id from issue
+  const { 
+    _id, 
+    title, 
+    category, 
+    status, 
+    priority, 
+    image, 
+    location, 
+    reportedBy, 
+    reportedAt, 
+    assignedTo, 
+    progress, 
+    upvotes 
+  } = issue;
+  console.log('Rendering IssueCard for issue ID:',_id);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -94,37 +107,37 @@ const IssueCard = ({ issue }) => {
       {/* Image Section - Fixed Height */}
       <figure className="relative flex-shrink-0">
         <img
-          src={issue.image}
-          alt={issue.title}
+          src={image}
+          alt={title}
           className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
         />
         {/* Category Icon */}
         <div className="absolute top-3 left-3 bg-white/90 p-2 rounded-lg shadow-sm">
           <div className="text-gray-700">
-            {getCategoryIcon(issue.category)}
+            {getCategoryIcon(category)}
           </div>
         </div>
       </figure>
-      
+
       {/* Card Content - Flex Grow to Fill Space */}
       <div className="card-body p-5 flex flex-col flex-grow">
         {/* Title */}
         <h2 className="card-title text-lg font-bold text-gray-900 mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
-          {issue.title}
+          {title}
         </h2>
 
         {/* Badges Row */}
         <div className="flex items-center gap-2 mb-4">
-          {getStatusBadge(issue.status)}
-          {getPriorityBadge(issue.priority)}
+          {getStatusBadge(status)}
+          {getPriorityBadge(priority)}
         </div>
 
         {/* Progress Number (for In-Progress status) */}
-        {issue.status === 'In-Progress' && issue.progress && (
+        {status === 'In-Progress' && progress && (
           <div className="flex items-center gap-2 mb-3">
             <FaTasks className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-medium text-gray-700">
-              Progress: <span className="text-blue-600 font-bold">{issue.progress}%</span>
+              Progress: <span className="text-blue-600 font-bold">{progress}%</span>
             </span>
           </div>
         )}
@@ -132,26 +145,26 @@ const IssueCard = ({ issue }) => {
         {/* Location */}
         <div className="flex items-center text-gray-700 mb-3">
           <FaMapMarkerAlt className="w-4 h-4 text-gray-500 mr-2" />
-          <span className="text-sm line-clamp-1">{issue.location}</span>
+          <span className="text-sm line-clamp-1">{location}</span>
         </div>
 
         {/* Reporter and Date */}
         <div className="flex items-center justify-between text-gray-600 text-sm mb-4">
           <div className="flex items-center">
             <FaUser className="w-4 h-4 mr-2" />
-            <span className="truncate">{issue.reportedBy}</span>
+            <span className="truncate">{reportedBy}</span>
           </div>
           <div className="flex items-center">
             <FaCalendarAlt className="w-4 h-4 mr-2" />
-            <span>{formatDate(issue.reportedAt)}</span>
+            <span>{formatDate(reportedAt)}</span>
           </div>
         </div>
 
         {/* Department Assigned - Auto pushes content */}
-        {issue.assignedTo && (
+        {assignedTo && (
           <div className="text-sm text-gray-700 mb-4 mt-auto">
             <span className="font-medium">Department: </span>
-            <span className="text-gray-600 truncate">{issue.assignedTo}</span>
+            <span className="text-gray-600 truncate">{assignedTo}</span>
           </div>
         )}
 
@@ -160,18 +173,17 @@ const IssueCard = ({ issue }) => {
           {/* Upvote Display */}
           <div className="flex items-center gap-2 bg-gray-200 px-3 py-2 rounded-lg">
             <FaThumbsUp className="w-4 h-4 text-blue-600" />
-            <span className="font-bold text-gray-900">{issue.upvotes || 0}</span>
+            <span className="font-bold text-gray-900">{upvotes || 0}</span>
             <span className="text-sm text-gray-600">Upvotes</span>
           </div>
 
-          {/* View Details Button */}
-          <button
-            onClick={handleViewDetails}
-            className="btn btn-primary btn-sm gap-2 hover:bg-blue-700 transition-colors"
-          >
-            <FaEye className="w-4 h-4" />
-            Details
-          </button>
+          {/* View Details Button - Now properly wrapped with NavLink */}
+          <NavLink to={`/issues/${_id}`}>
+            <button className="btn btn-primary btn-sm gap-2 hover:bg-blue-700 transition-colors">
+              <FaEye className="w-4 h-4" />
+              Details
+            </button>
+          </NavLink>
         </div>
       </div>
     </div>
