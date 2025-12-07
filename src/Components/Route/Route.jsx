@@ -9,6 +9,8 @@ import About from "../About/About";
 import ContactUs from "../ContactUs/ContactUs";
 import AllIssues from "../AllIssues/AllIssues";
 import IssueDetails from "../IssueDetails.jsx/IssueDetails";
+import DashboardLayout from "../Dashboard/DashboardLayout";
+import DashboardHome from "../Dashboard/DashboardHome";
 
 
 export const router = createBrowserRouter([
@@ -28,7 +30,7 @@ export const router = createBrowserRouter([
       {
         path: "issues/:id",
         element: <IssueDetails />,
-        loader: ({params}) => fetch(`http://localhost:3000/issues/${params.id}`)
+        loader: ({ params }) => fetch(`http://localhost:3000/issues/${params.id}`)
       },
 
       {
@@ -54,6 +56,16 @@ export const router = createBrowserRouter([
         element: <Signup> </Signup>
 
       }
+    ]
+  },
+  {
+    path: '/dashboard',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <DashboardHome />
+      },
     ]
   }
 ]);

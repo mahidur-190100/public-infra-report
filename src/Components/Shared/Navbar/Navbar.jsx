@@ -80,7 +80,7 @@ const Navbar = () => {
                                             <div className="font-semibold">{user.displayName}</div>
                                             <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                         </li>
-                                        <li><NavLink to="/my-reports">My Reports</NavLink></li>
+                                        <li><NavLink to="/dashboard">Dashboard</NavLink></li>
                                         <li><NavLink to="/settings">Settings</NavLink></li>
                                         <li><hr /></li>
                                         <li><a onClick={handleLogout} className="text-red-600 cursor-pointer">Logout</a></li>
