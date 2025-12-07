@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from "react";
 import {
   FaThumbsUp,
   FaMapMarkerAlt,
@@ -16,45 +16,96 @@ import {
   FaTrafficLight,
   FaTint,
   FaChair,
-  FaTasks
-} from 'react-icons/fa';
-import { NavLink } from 'react-router-dom';
+  FaTasks,
+} from "react-icons/fa";
+import { NavLink } from "react-router-dom";
 
 const IssueCard = ({ issue }) => {
-  // Destructure _id from issue
-  const { 
-    _id, 
-    title, 
-    category, 
-    status, 
-    priority, 
-    image, 
-    location, 
-    reportedBy, 
-    reportedAt, 
-    assignedTo, 
-    progress, 
-    upvotes 
+  const {
+    _id,
+    title,
+    category,
+    status,
+    priority,
+    image,
+    location,
+    reportedBy,
+    reportedAt,
+    assignedTo,
+    progress,
+    upvotes: initialUpvotes,
+    upvotedBy: initialUpvotedBy = [],
   } = issue;
-  console.log('Rendering IssueCard for issue ID:',_id);
+
+  // Get or create user ID (for demo purposes)
+  const getUserId = () => {
+    let userId = localStorage.getItem("userId");
+    if (!userId) {
+      userId = "user_" + Date.now() + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem("userId", userId);
+    }
+    return userId;
+  };
+
+  const [upvotes, setUpvotes] = useState(initialUpvotes || 0);
+  const [hasUpvoted, setHasUpvoted] = useState(
+    initialUpvotedBy.includes(getUserId())
+  );
+  const [isUpvoting, setIsUpvoting] = useState(false);
+
+  const handleUpvote = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isUpvoting) return;
+
+    setIsUpvoting(true);
+    const userId = getUserId();
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/issues/${_id}/upvote`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUpvotes(data.upvotes);
+        setHasUpvoted(data.hasUpvoted);
+      } else {
+        console.error("Upvote failed:", data.message);
+      }
+    } catch (error) {
+      console.error("Error upvoting:", error);
+    } finally {
+      setIsUpvoting(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Pending':
+      case "Pending":
         return (
           <div className="flex items-center gap-1">
             <FaClock className="w-3 h-3" />
             <span className="badge badge-warning text-xs">Pending</span>
           </div>
         );
-      case 'In-Progress':
+      case "In-Progress":
         return (
           <div className="flex items-center gap-1">
             <FaTasks className="w-3 h-3" />
             <span className="badge badge-info text-xs">In Progress</span>
           </div>
         );
-      case 'Resolved':
+      case "Resolved":
         return (
           <div className="flex items-center gap-1">
             <FaCheckCircle className="w-3 h-3" />
@@ -67,7 +118,7 @@ const IssueCard = ({ issue }) => {
   };
 
   const getPriorityBadge = (priority) => {
-    if (priority === 'High') {
+    if (priority === "High") {
       return (
         <div className="flex items-center gap-1">
           <FaExclamationTriangle className="w-3 h-3" />
@@ -80,23 +131,32 @@ const IssueCard = ({ issue }) => {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'Road Damage': return <FaRoad className="w-5 h-5" />;
-      case 'Public Lighting': return <FaLightbulb className="w-5 h-5" />;
-      case 'Water Supply': return <FaWater className="w-5 h-5" />;
-      case 'Sanitation': return <FaTrashAlt className="w-5 h-5" />;
-      case 'Footpath Repair': return <FaWalking className="w-5 h-5" />;
-      case 'Traffic Signals': return <FaTrafficLight className="w-5 h-5" />;
-      case 'Drainage': return <FaTint className="w-5 h-5" />;
-      case 'Public Furniture': return <FaChair className="w-5 h-5" />;
-      default: return <FaRoad className="w-5 h-5" />;
+      case "Road Damage":
+        return <FaRoad className="w-5 h-5" />;
+      case "Public Lighting":
+        return <FaLightbulb className="w-5 h-5" />;
+      case "Water Supply":
+        return <FaWater className="w-5 h-5" />;
+      case "Sanitation":
+        return <FaTrashAlt className="w-5 h-5" />;
+      case "Footpath Repair":
+        return <FaWalking className="w-5 h-5" />;
+      case "Traffic Signals":
+        return <FaTrafficLight className="w-5 h-5" />;
+      case "Drainage":
+        return <FaTint className="w-5 h-5" />;
+      case "Public Furniture":
+        return <FaChair className="w-5 h-5" />;
+      default:
+        return <FaRoad className="w-5 h-5" />;
     }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -113,9 +173,7 @@ const IssueCard = ({ issue }) => {
         />
         {/* Category Icon */}
         <div className="absolute top-3 left-3 bg-white/90 p-2 rounded-lg shadow-sm">
-          <div className="text-gray-700">
-            {getCategoryIcon(category)}
-          </div>
+          <div className="text-gray-700">{getCategoryIcon(category)}</div>
         </div>
       </figure>
 
@@ -133,11 +191,12 @@ const IssueCard = ({ issue }) => {
         </div>
 
         {/* Progress Number (for In-Progress status) */}
-        {status === 'In-Progress' && progress && (
+        {status === "In-Progress" && progress && (
           <div className="flex items-center gap-2 mb-3">
             <FaTasks className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-medium text-gray-700">
-              Progress: <span className="text-blue-600 font-bold">{progress}%</span>
+              Progress:{" "}
+              <span className="text-blue-600 font-bold">{progress}%</span>
             </span>
           </div>
         )}
@@ -170,14 +229,34 @@ const IssueCard = ({ issue }) => {
 
         {/* Action Buttons - Always at bottom */}
         <div className="card-actions flex items-center justify-between mt-auto pt-4">
-          {/* Upvote Display */}
-          <div className="flex items-center gap-2 bg-gray-200 px-3 py-2 rounded-lg">
-            <FaThumbsUp className="w-4 h-4 text-blue-600" />
-            <span className="font-bold text-gray-900">{upvotes || 0}</span>
-            <span className="text-sm text-gray-600">Upvotes</span>
-          </div>
+          {/* Upvote Button */}
+          <button
+            onClick={handleUpvote}
+            disabled={isUpvoting}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+              hasUpvoted
+                ? "bg-blue-100 border border-blue-300"
+                : "bg-gray-200 hover:bg-gray-300"
+            } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
+          >
+            <FaThumbsUp
+              className={`w-4 h-4 transition-colors ${
+                hasUpvoted ? "text-blue-600" : "text-gray-600"
+              }`}
+            />
+            <span
+              className={`font-bold ${
+                hasUpvoted ? "text-blue-700" : "text-gray-900"
+              }`}
+            >
+              {upvotes}
+            </span>
+            <span className="text-sm text-gray-600">
+              {hasUpvoted ? "Upvoted" : "Upvote"}
+            </span>
+          </button>
 
-          {/* View Details Button - Now properly wrapped with NavLink */}
+          {/* View Details Button */}
           <NavLink to={`/issues/${_id}`}>
             <button className="btn btn-primary btn-sm gap-2 hover:bg-blue-700 transition-colors">
               <FaEye className="w-4 h-4" />
