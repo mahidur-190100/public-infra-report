@@ -23,6 +23,7 @@
     "react-icons": "^5.5.0",
     "react-responsive-carousel": "^3.2.23",
     "react-router-dom": "^7.10.1",
+    "sweetalert2": "^11.26.4",
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {

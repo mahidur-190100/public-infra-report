@@ -11,6 +11,7 @@ import AllIssues from "../AllIssues/AllIssues";
 import IssueDetails from "../IssueDetails.jsx/IssueDetails";
 import DashboardLayout from "../Dashboard/DashboardLayout";
 import DashboardHome from "../Dashboard/DashboardHome";
+import SubmitIssue from "../SubmitIssue/SubmitIssue";
 
 
 export const router = createBrowserRouter([
@@ -66,6 +67,11 @@ export const router = createBrowserRouter([
         index: true,
         element: <DashboardHome />
       },
+      {
+        path:'submit-issue',
+        element: <SubmitIssue> </SubmitIssue>
+
+      }
     ]
   }
 ]);

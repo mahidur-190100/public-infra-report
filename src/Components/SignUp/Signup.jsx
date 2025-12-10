@@ -10,6 +10,7 @@ const Signup = () => {
     const { registerUser, updateUserProfile, logout } = useAuth();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    // const axiosSecure = useAxiosSecure();
     
     const handleSignup = (data) => {
         setLoading(true);
@@ -27,18 +28,23 @@ const Signup = () => {
 
                 axios.post(imageURL, formdata)
                     .then(res => {
-                        console.log("after upload", res.data.data.display_url);
+                       const photoUrl= res.data.data.display_url;
 
+
+
+
+
+                        // update user profile to firebase
                         const userProfile = {
                             displayName: `${data['First Name']} ${data['Last Name']}`,
-                            photoURL: res.data.data.display_url 
+                            photoURL: photoUrl
                         };
 
                         updateUserProfile(userProfile)
                             .then(() => {
                                 toast.success('Account created successfully!');
 
-                                // 🚀 LOGOUT USER IMMEDIATELY AFTER SIGNUP  
+                                // S LOGOUT USER IMMEDIATELY AFTER SIGNUP  
                                 logout().then(() => {
                                     setTimeout(() => {
                                         navigate('/login');

@@ -53,8 +53,8 @@ const DashboardHome = () => {
             </div>
           </NavLink>
 
-          {/* Edit/Delete Own Issues Card */}
-          <NavLink to="/dashboard/edit-issues" className="group block">
+          {/* MY issue */}
+          <NavLink to="/dashboard/my-issue" className="group block">
             <div className="bg-white rounded-lg sm:rounded-xl shadow hover:shadow-lg sm:shadow-md sm:hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 overflow-hidden h-full">
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-1 sm:h-2"></div>
               <div className="p-3 sm:p-4 md:p-6">
@@ -63,7 +63,7 @@ const DashboardHome = () => {
                     <FaEdit className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
                   </div>
                   <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                    Edit/Delete Own Issues
+                    My Issues
                   </h3>
                 </div>
                 <p className="text-gray-600 text-xs sm:text-sm md:text-base mb-4 sm:mb-6">
