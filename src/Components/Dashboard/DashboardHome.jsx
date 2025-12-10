@@ -54,7 +54,7 @@ const DashboardHome = () => {
           </NavLink>
 
           {/* MY issue */}
-          <NavLink to="/dashboard/my-issue" className="group block">
+          <NavLink to="/dashboard/my-issues" className="group block">
             <div className="bg-white rounded-lg sm:rounded-xl shadow hover:shadow-lg sm:shadow-md sm:hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 overflow-hidden h-full">
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-1 sm:h-2"></div>
               <div className="p-3 sm:p-4 md:p-6">

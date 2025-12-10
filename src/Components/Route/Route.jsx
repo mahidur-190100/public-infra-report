@@ -12,6 +12,7 @@ import IssueDetails from "../IssueDetails.jsx/IssueDetails";
 import DashboardLayout from "../Dashboard/DashboardLayout";
 import DashboardHome from "../Dashboard/DashboardHome";
 import SubmitIssue from "../SubmitIssue/SubmitIssue";
+import MyIssue from "../MyIssue/MyIssue";
 
 
 export const router = createBrowserRouter([
@@ -68,10 +69,14 @@ export const router = createBrowserRouter([
         element: <DashboardHome />
       },
       {
-        path:'submit-issue',
+        path:'/dashboard/submit-issue',
         element: <SubmitIssue> </SubmitIssue>
 
-      }
+      },
+    {
+      path:'/dashboard/my-issues',
+      element: <MyIssue> </MyIssue>
+    },
     ]
   }
 ]);

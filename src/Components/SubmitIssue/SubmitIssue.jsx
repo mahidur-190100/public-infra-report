@@ -34,9 +34,8 @@ const SubmitIssue = () => {
 
   const user = getUserFromLocalStorage();
 
-  // Form state
+  // Form state (removed reporterName since it comes from login)
   const [formData, setFormData] = useState({
-    reporterName: user?.displayName || '',
     title: '',
     description: '',
     category: '',
@@ -214,8 +213,9 @@ const SubmitIssue = () => {
       newErrors.location = 'Location is required';
     }
     
-    if (!formData.reporterName.trim()) {
-      newErrors.reporterName = 'Your name is required';
+    // Check if user is logged in
+    if (!user) {
+      newErrors.user = 'You must be logged in to submit an issue';
     }
     
     setErrors(newErrors);
@@ -255,14 +255,15 @@ const SubmitIssue = () => {
         Swal.close();
       }
 
-      // Step 2: Prepare data for MongoDB
+      // Step 2: Prepare data for MongoDB - Use logged-in user's info
       const issueData = {
         _id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: formData.title,
         description: formData.description,
         category: formData.category,
         location: formData.location,
-        reportedBy: formData.reporterName,
+        reporterName: user?.displayName || 'User', // From login, not form
+        userEmail: user?.email || '', // From login
         priority: formData.priority,
         status: 'pending',
         upvotes: 0,
@@ -278,12 +279,12 @@ const SubmitIssue = () => {
         timeline: [{
           status: 'pending',
           message: 'Issue reported by citizen',
-          updatedBy: formData.reporterName,
+          updatedBy: user?.displayName || 'User', // From login
           updatedAt: new Date().toISOString()
         }]
       };
 
-      console.log('Submitting to MongoDB:', issueData);
+      console.log('Submitting to MongoDB with user info:', issueData);
 
       // Step 3: Send to backend
       const response = await axios.post('http://localhost:3000/issues', issueData, {
@@ -304,7 +305,8 @@ const SubmitIssue = () => {
                 <p><strong>Title:</strong> ${issueData.title}</p>
                 <p><strong>Category:</strong> ${issueData.category}</p>
                 <p><strong>Status:</strong> ${issueData.status}</p>
-                <p><strong>Reported By:</strong> ${issueData.reportedBy}</p>
+                <p><strong>Reported By:</strong> ${user?.displayName} (from login)</p>
+                <p><strong>User Email:</strong> ${user?.email}</p>
               </div>
             </div>
           `,
@@ -316,7 +318,6 @@ const SubmitIssue = () => {
         
         // Clear form
         setFormData({
-          reporterName: user?.displayName || '',
           title: '',
           description: '',
           category: '',
@@ -360,7 +361,6 @@ const SubmitIssue = () => {
     }).then((result) => {
       if (result.isConfirmed) {
         setFormData({
-          reporterName: user?.displayName || '',
           title: '',
           description: '',
           category: '',
@@ -395,44 +395,15 @@ const SubmitIssue = () => {
           </p>
         </div>
 
-        {/* User Info */}
-        {user ? (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <FaUser className="text-green-600 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-green-800">Logged In User</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  <strong>Name:</strong> {user.displayName}
-                </p>
-                <p className="text-sm text-green-700">
-                  <strong>Email:</strong> {user.email}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <FaExclamationCircle className="text-yellow-600 mt-1 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-yellow-800">Not Logged In</h3>
-                <p className="text-sm text-yellow-700 mt-1">
-                  You can still submit issues, but please provide your name.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* User Limit Info */}
+        {/* Data Storage Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
             <FaExclamationCircle className="text-blue-600 mt-1 flex-shrink-0" />
             <div>
               <h3 className="font-semibold text-blue-800">Data Storage</h3>
               <p className="text-sm text-blue-700 mt-1">
-                Your issue will be saved in MongoDB database with all required fields.
+                Your issue will be saved in our Database.
               </p>
             </div>
           </div>
@@ -450,52 +421,50 @@ const SubmitIssue = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Report New Issue</h2>
-                <p className="text-blue-100">Data will be saved to MongoDB</p>
+                <p className="text-blue-100">Logged in as: {user?.displayName || 'Not logged in'}</p>
               </div>
             </div>
           </div>
 
           {/* Form Body */}
           <div className="p-6 md:p-8 space-y-6">
-            {/* User Information */}
+            {/* Reporter Information - Auto-filled from login */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
               <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <FaUser /> Your Information
+                <FaUser /> Reporter Information (Auto-filled from Login)
               </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Name *
+                    Reporter Name
                   </label>
-                  <input
-                    type="text"
-                    name="reporterName"
-                    value={formData.reporterName}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.reporterName ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter your full name"
-                  />
-                  {errors.reporterName && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {errors.reporterName}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-lg border border-gray-300">
+                    <FaUser className="text-gray-500" />
+                    <span className="text-gray-700 font-medium">{user?.displayName || 'Not logged in'}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is automatically filled from your account
+                  </p>
                 </div>
                 
-                {user && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email (Auto-filled)
-                    </label>
-                    <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-lg">
-                      <FaEnvelope className="text-gray-500" />
-                      <span className="text-gray-700">{user.email}</span>
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reporter Email
+                  </label>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-lg border border-gray-300">
+                    <FaEnvelope className="text-gray-500" />
+                    <span className="text-gray-700 font-medium">{user?.email || 'Not logged in'}</span>
                   </div>
-                )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    This email will be used to show your issues in "My Issues" page
+                  </p>
+                </div>
               </div>
+              {errors.user && (
+                <p className="mt-2 text-sm text-red-600">
+                  {errors.user}
+                </p>
+              )}
             </div>
 
             {/* Issue Details */}
@@ -641,7 +610,6 @@ const SubmitIssue = () => {
                     <span className="text-gray-700">High (Urgent)</span>
                   </label>
                 </div>
-        
               </div>
             </div>
 
@@ -670,19 +638,23 @@ const SubmitIssue = () => {
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
-                  disabled={imagePreviews.length >= 5 || uploadingImages}
+                  disabled={imagePreviews.length >= 5 || uploadingImages || !user}
                 />
                 <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
                   imagePreviews.length >= 5 
                     ? 'border-gray-300 bg-gray-50 cursor-not-allowed' 
                     : uploadingImages
                     ? 'border-yellow-300 bg-yellow-50 cursor-not-allowed'
+                    : !user
+                    ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
                     : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'
                 }`}>
                   <div className="flex flex-col items-center">
                     <FaImage className="w-12 h-12 text-blue-500 mb-3" />
                     <p className="text-gray-700 font-medium mb-1">
-                      {imagePreviews.length >= 5 
+                      {!user 
+                        ? 'Please log in to upload images'
+                        : imagePreviews.length >= 5 
                         ? 'Maximum images reached'
                         : uploadingImages
                         ? 'Uploading to ImgBB...'
@@ -707,7 +679,7 @@ const SubmitIssue = () => {
                       type="button"
                       onClick={clearAllImages}
                       className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={uploadingImages}
+                      disabled={uploadingImages || !user}
                     >
                       <FaTrash className="w-3 h-3" /> Clear All
                     </button>
@@ -768,7 +740,7 @@ const SubmitIssue = () => {
                 type="button"
                 onClick={clearForm}
                 className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-                disabled={loading || uploadingImages}
+                disabled={loading || uploadingImages || !user}
               >
                 Clear Form
               </button>
@@ -777,9 +749,9 @@ const SubmitIssue = () => {
               
               <button
                 type="submit"
-                disabled={loading || uploadingImages}
+                disabled={loading || uploadingImages || !user}
                 className={`px-8 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                  loading || uploadingImages
+                  loading || uploadingImages || !user
                     ? 'bg-blue-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white shadow-lg hover:shadow-xl'
                 }`}
@@ -789,9 +761,11 @@ const SubmitIssue = () => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     {uploadingImages ? 'Uploading Images...' : 'Saving to MongoDB...'}
                   </>
+                ) : !user ? (
+                  'Please Log In to Submit'
                 ) : (
                   <>
-                    <FaPaperPlane /> Submit Issue
+                    <FaPaperPlane /> Submit Issue as {user.displayName}
                   </>
                 )}
               </button>

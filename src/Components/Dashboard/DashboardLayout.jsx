@@ -29,8 +29,8 @@ const DashboardLayout = () => {
       icon: <FaPlus className="w-4 h-4 sm:w-5 sm:h-5" />
     },
     {
-      title: 'Edit/Delete Own Issues',
-      path: '/dashboard/edit-issues',
+      title: 'My Issues',
+      path: '/dashboard/my-issues',
       icon: <FaEdit className="w-4 h-4 sm:w-5 sm:h-5" />
     },
     {
