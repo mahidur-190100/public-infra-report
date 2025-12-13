@@ -13,6 +13,10 @@ import DashboardLayout from "../Dashboard/DashboardLayout";
 import DashboardHome from "../Dashboard/DashboardHome";
 import SubmitIssue from "../SubmitIssue/SubmitIssue";
 import MyIssue from "../MyIssue/MyIssue";
+import PremiumSubscription from "../../PremiumSubscription/PremiumSubscription";
+import PaymentSuccess from "../../PaymentSuccess/PaymentSuccess";
+import ViewPayment from "../../ViewPayment/ViewPayment";
+
 
 export const router = createBrowserRouter([
   {
@@ -92,6 +96,15 @@ export const router = createBrowserRouter([
         path: '/dashboard/my-issues',
         element: <MyIssue />
       },
+      {
+        path: '/dashboard/premium',
+        element: <PremiumSubscription> </PremiumSubscription>
+      },
+      {
+        path: '/dashboard/payment-success',
+        element: <PaymentSuccess> </PaymentSuccess>
+      },
+
       // Admin routes
       // {
       //   path: '/dashboard/admin/issues',
@@ -113,10 +126,10 @@ export const router = createBrowserRouter([
       //   path: '/dashboard/admin/manage-citizens',
       //   element: <div className="p-6">Admin: Manage Citizens Page (TODO)</div>
       // },
-      // {
-      //   path: '/dashboard/admin/payments',
-      //   element: <div className="p-6">Admin: View Payments Page (TODO)</div>
-      // },
+      {
+        path: '/dashboard/admin/payments',
+        element: <ViewPayment> </ViewPayment>
+      },
     ]
   }
 ]);
