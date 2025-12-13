@@ -17,6 +17,7 @@ import {
   FaTint,
   FaChair,
   FaTasks,
+  FaUserTie // Added for staff icon
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 
@@ -89,23 +90,41 @@ const IssueCard = ({ issue }) => {
     }
   };
 
+  // Function to safely get assigned staff name
+  const getAssignedStaffName = () => {
+    if (!assignedTo) return null;
+    
+    // If assignedTo is a string, return it
+    if (typeof assignedTo === 'string') return assignedTo;
+    
+    // If assignedTo is an object, extract name
+    if (typeof assignedTo === 'object' && assignedTo !== null) {
+      return assignedTo.name || assignedTo.displayName || assignedTo.department || 'Assigned Staff';
+    }
+    
+    return null;
+  };
+
   const getStatusBadge = (status) => {
-    switch (status) {
-      case "Pending":
+    const statusText = status || 'Pending';
+    
+    switch (statusText.toLowerCase()) {
+      case "pending":
         return (
           <div className="flex items-center gap-1">
             <FaClock className="w-3 h-3" />
             <span className="badge badge-warning text-xs">Pending</span>
           </div>
         );
-      case "In-Progress":
+      case "in progress":
+      case "in-progress":
         return (
           <div className="flex items-center gap-1">
             <FaTasks className="w-3 h-3" />
             <span className="badge badge-info text-xs">In Progress</span>
           </div>
         );
-      case "Resolved":
+      case "resolved":
         return (
           <div className="flex items-center gap-1">
             <FaCheckCircle className="w-3 h-3" />
@@ -113,12 +132,14 @@ const IssueCard = ({ issue }) => {
           </div>
         );
       default:
-        return <span className="badge badge-neutral text-xs">{status}</span>;
+        return <span className="badge badge-neutral text-xs">{statusText}</span>;
     }
   };
 
   const getPriorityBadge = (priority) => {
-    if (priority === "High") {
+    const priorityText = priority || 'Normal';
+    
+    if (priorityText.toLowerCase() === "high" || priorityText.toLowerCase() === "critical") {
       return (
         <div className="flex items-center gap-1">
           <FaExclamationTriangle className="w-3 h-3" />
@@ -130,22 +151,31 @@ const IssueCard = ({ issue }) => {
   };
 
   const getCategoryIcon = (category) => {
-    switch (category) {
-      case "Road Damage":
+    const categoryText = category || 'General';
+    
+    switch (categoryText.toLowerCase()) {
+      case "road damage":
+      case "roads":
         return <FaRoad className="w-5 h-5" />;
-      case "Public Lighting":
+      case "public lighting":
+      case "lighting":
         return <FaLightbulb className="w-5 h-5" />;
-      case "Water Supply":
+      case "water supply":
+      case "water":
         return <FaWater className="w-5 h-5" />;
-      case "Sanitation":
+      case "sanitation":
+      case "garbage":
         return <FaTrashAlt className="w-5 h-5" />;
-      case "Footpath Repair":
+      case "footpath repair":
+      case "footpath":
         return <FaWalking className="w-5 h-5" />;
-      case "Traffic Signals":
+      case "traffic signals":
+      case "traffic":
         return <FaTrafficLight className="w-5 h-5" />;
-      case "Drainage":
+      case "drainage":
         return <FaTint className="w-5 h-5" />;
-      case "Public Furniture":
+      case "public furniture":
+      case "furniture":
         return <FaChair className="w-5 h-5" />;
       default:
         return <FaRoad className="w-5 h-5" />;
@@ -153,21 +183,27 @@ const IssueCard = ({ issue }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "Recent";
+    }
   };
 
   if (!issue) return null;
+
+  const assignedStaffName = getAssignedStaffName();
 
   return (
     <div className="card bg-gray-100 w-full h-full shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-200 cursor-pointer flex flex-col">
       {/* Image Section - Fixed Height */}
       <figure className="relative flex-shrink-0">
         <img
-          src={image}
+          src={image || "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400"}
           alt={title}
           className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
         />
@@ -181,7 +217,7 @@ const IssueCard = ({ issue }) => {
       <div className="card-body p-5 flex flex-col flex-grow">
         {/* Title */}
         <h2 className="card-title text-lg font-bold text-gray-900 mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
-          {title}
+          {title || "Untitled Issue"}
         </h2>
 
         {/* Badges Row */}
@@ -191,7 +227,7 @@ const IssueCard = ({ issue }) => {
         </div>
 
         {/* Progress Number (for In-Progress status) */}
-        {status === "In-Progress" && progress && (
+        {(status === "In-Progress" || status === "in progress" || status === "in-progress") && progress && (
           <div className="flex items-center gap-2 mb-3">
             <FaTasks className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-medium text-gray-700">
@@ -204,14 +240,14 @@ const IssueCard = ({ issue }) => {
         {/* Location */}
         <div className="flex items-center text-gray-700 mb-3">
           <FaMapMarkerAlt className="w-4 h-4 text-gray-500 mr-2" />
-          <span className="text-sm line-clamp-1">{location}</span>
+          <span className="text-sm line-clamp-1">{location || "Location not specified"}</span>
         </div>
 
         {/* Reporter and Date */}
         <div className="flex items-center justify-between text-gray-600 text-sm mb-4">
           <div className="flex items-center">
             <FaUser className="w-4 h-4 mr-2" />
-            <span className="truncate">{reportedBy}</span>
+            <span className="truncate">{reportedBy || "Anonymous"}</span>
           </div>
           <div className="flex items-center">
             <FaCalendarAlt className="w-4 h-4 mr-2" />
@@ -219,11 +255,21 @@ const IssueCard = ({ issue }) => {
           </div>
         </div>
 
-        {/* Department Assigned - Auto pushes content */}
-        {assignedTo && (
+        {/* Department Assigned - FIXED: Don't render object directly */}
+        {assignedStaffName && (
           <div className="text-sm text-gray-700 mb-4 mt-auto">
-            <span className="font-medium">Department: </span>
-            <span className="text-gray-600 truncate">{assignedTo}</span>
+            <div className="flex items-center gap-2">
+              <FaUserTie className="w-4 h-4 text-gray-500" />
+              <div>
+                <span className="font-medium">Assigned: </span>
+                <span className="text-gray-600 truncate">{assignedStaffName}</span>
+              </div>
+            </div>
+            {assignedTo && typeof assignedTo === 'object' && assignedTo.department && (
+              <div className="text-xs text-gray-500 ml-6 mt-1">
+                Dept: {assignedTo.department}
+              </div>
+            )}
           </div>
         )}
 

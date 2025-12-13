@@ -16,6 +16,8 @@ import MyIssue from "../MyIssue/MyIssue";
 import PremiumSubscription from "../../PremiumSubscription/PremiumSubscription";
 import PaymentSuccess from "../../PaymentSuccess/PaymentSuccess";
 import ViewPayment from "../../ViewPayment/ViewPayment";
+import AssignStaff from "../../AssignStaff/AssignStaff";
+import ManageStaff from "../../ManageStaff/ManageStaff";
 
 
 export const router = createBrowserRouter([
@@ -110,18 +112,21 @@ export const router = createBrowserRouter([
       //   path: '/dashboard/admin/issues',
       //   element: <div className="p-6">Admin: View All Issues Page (TODO)</div>
       // },
-      // {
-      //   path: '/dashboard/admin/assign-staff',
-      //   element: <div className="p-6">Admin: Assign Staff Page (TODO)</div>
-      // },
+
+      // admin
+    
+      {
+        path: '/dashboard/admin/assign-staff',
+        element: <AssignStaff> </AssignStaff>
+      },
       // {
       //   path: '/dashboard/admin/reject-issues',
       //   element: <div className="p-6">Admin: Reject Issues Page (TODO)</div>
       // },
-      // {
-      //   path: '/dashboard/admin/manage-staff',
-      //   element: <div className="p-6">Admin: Manage Staff Page (TODO)</div>
-      // },
+      {
+        path: '/dashboard/admin/manage-staff',
+        element: <ManageStaff> </ManageStaff>
+      },
       // {
       //   path: '/dashboard/admin/manage-citizens',
       //   element: <div className="p-6">Admin: Manage Citizens Page (TODO)</div>

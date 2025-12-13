@@ -82,7 +82,7 @@ const AllIssues = () => {
                         <p className="text-red-600 mb-4">{error}</p>
                         <button 
                             onClick={() => window.location.reload()} 
-                            className="btn btn-error"
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                         >
                             Try Again
                         </button>
@@ -123,7 +123,7 @@ const AllIssues = () => {
                             {searchTerm && (
                                 <button 
                                     onClick={() => setSearchTerm('')}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
                                 >
                                     Clear search
                                 </button>
@@ -189,7 +189,7 @@ const AllIssues = () => {
                         {searchTerm && (
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="btn btn-primary"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 View All Issues
                             </button>
@@ -197,7 +197,7 @@ const AllIssues = () => {
                         {allIssues.length === 0 && (
                             <button
                                 onClick={() => window.location.href = '/dashboard/submit-issue'}
-                                className="btn btn-primary"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                             >
                                 Report First Issue
                             </button>

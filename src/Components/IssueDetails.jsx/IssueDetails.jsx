@@ -18,6 +18,8 @@ import {
   FaChair,
   FaTasks,
   FaBuilding,
+  FaUserTie, // Added for staff display
+  FaEnvelope, // Added for email display
 } from "react-icons/fa";
 
 const IssueDetails = () => {
@@ -86,6 +88,32 @@ const IssueDetails = () => {
     }
   };
 
+  // Function to safely get assigned staff details
+  const getAssignedStaffInfo = () => {
+    if (!issue?.assignedTo) return null;
+    
+    // If assignedTo is a string, return it as name
+    if (typeof issue.assignedTo === 'string') {
+      return {
+        name: issue.assignedTo,
+        department: 'Not specified',
+        email: null
+      };
+    }
+    
+    // If assignedTo is an object, extract info
+    if (typeof issue.assignedTo === 'object' && issue.assignedTo !== null) {
+      return {
+        name: issue.assignedTo.name || issue.assignedTo.displayName || 'Staff Member',
+        department: issue.assignedTo.department || 'Not specified',
+        email: issue.assignedTo.email || null,
+        role: issue.assignedTo.role || 'staff'
+      };
+    }
+    
+    return null;
+  };
+
   if (!issue) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -109,32 +137,37 @@ const IssueDetails = () => {
     image,
     reportedBy,
     reportedAt,
-    assignedTo,
     progress,
     resolvedAt,
     latitude,
     longitude,
   } = issue;
 
+  // Get staff info
+  const staffInfo = getAssignedStaffInfo();
+
   // Get status badge
   const getStatusBadge = () => {
     const baseClasses =
       "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium";
 
-    switch (status) {
-      case "Pending":
+    const statusText = status || 'Pending';
+    
+    switch (statusText.toLowerCase()) {
+      case "pending":
         return (
           <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
             <FaClock className="mr-1" /> Pending
           </span>
         );
-      case "In-Progress":
+      case "in progress":
+      case "in-progress":
         return (
           <span className={`${baseClasses} bg-blue-100 text-blue-800`}>
             <FaTasks className="mr-1" /> In Progress
           </span>
         );
-      case "Resolved":
+      case "resolved":
         return (
           <span className={`${baseClasses} bg-green-100 text-green-800`}>
             <FaCheckCircle className="mr-1" /> Resolved
@@ -143,7 +176,7 @@ const IssueDetails = () => {
       default:
         return (
           <span className={`${baseClasses} bg-gray-100 text-gray-800`}>
-            {status}
+            {statusText}
           </span>
         );
     }
@@ -151,7 +184,9 @@ const IssueDetails = () => {
 
   // Get priority badge
   const getPriorityBadge = () => {
-    if (priority === "High") {
+    const priorityText = priority || 'Normal';
+    
+    if (priorityText.toLowerCase() === "high" || priorityText.toLowerCase() === "critical") {
       return (
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
           <FaExclamationTriangle className="mr-1" /> High Priority
@@ -167,22 +202,31 @@ const IssueDetails = () => {
 
   // Get category icon
   const getCategoryIcon = () => {
-    switch (category) {
-      case "Road Damage":
+    const categoryText = category || 'General';
+    
+    switch (categoryText.toLowerCase()) {
+      case "road damage":
+      case "roads":
         return <FaRoad className="w-6 h-6" />;
-      case "Public Lighting":
+      case "public lighting":
+      case "lighting":
         return <FaLightbulb className="w-6 h-6" />;
-      case "Water Supply":
+      case "water supply":
+      case "water":
         return <FaWater className="w-6 h-6" />;
-      case "Sanitation":
+      case "sanitation":
+      case "garbage":
         return <FaTrashAlt className="w-6 h-6" />;
-      case "Footpath Repair":
+      case "footpath repair":
+      case "footpath":
         return <FaWalking className="w-6 h-6" />;
-      case "Traffic Signals":
+      case "traffic signals":
+      case "traffic":
         return <FaTrafficLight className="w-6 h-6" />;
-      case "Drainage":
+      case "drainage":
         return <FaTint className="w-6 h-6" />;
-      case "Public Furniture":
+      case "public furniture":
+      case "furniture":
         return <FaChair className="w-6 h-6" />;
       default:
         return <FaRoad className="w-6 h-6" />;
@@ -191,14 +235,19 @@ const IssueDetails = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!dateString) return 'Not available';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -208,7 +257,11 @@ const IssueDetails = () => {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Image Section */}
           <div className="relative h-64 md:h-80">
-            <img src={image} alt={title} className="w-full h-full object-cover" />
+            <img 
+              src={image || "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800"} 
+              alt={title} 
+              className="w-full h-full object-cover" 
+            />
             <div className="absolute top-4 left-4 bg-white/90 p-3 rounded-lg">
               {getCategoryIcon()}
             </div>
@@ -219,7 +272,7 @@ const IssueDetails = () => {
             {/* Title and Badges */}
             <div className="mb-6">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                {title}
+                {title || "Untitled Issue"}
               </h1>
               <div className="flex flex-wrap gap-2 mb-4">
                 {getStatusBadge()}
@@ -228,7 +281,7 @@ const IssueDetails = () => {
             </div>
 
             {/* Progress Bar for In-Progress issues */}
-            {status === "In-Progress" && progress !== undefined && (
+            {(status === "In-Progress" || status === "in progress" || status === "in-progress") && progress !== undefined && (
               <div className="mb-6 p-4 border rounded-lg">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-gray-900">Progress</span>
@@ -289,7 +342,7 @@ const IssueDetails = () => {
                   <FaMapMarkerAlt className="w-5 h-5 text-gray-500 mt-1 mr-3 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Location</h3>
-                    <p className="text-gray-700">{location}</p>
+                    <p className="text-gray-700">{location || "Location not specified"}</p>
                     {latitude && longitude && (
                       <p className="text-sm text-gray-500 mt-1">
                         Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)}
@@ -302,7 +355,7 @@ const IssueDetails = () => {
                   <FaUser className="w-5 h-5 text-gray-500 mt-1 mr-3 flex-shrink-0" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Reported By</h3>
-                    <p className="text-gray-700">{reportedBy}</p>
+                    <p className="text-gray-700">{reportedBy || "Anonymous"}</p>
                   </div>
                 </div>
 
@@ -317,14 +370,49 @@ const IssueDetails = () => {
 
               {/* Right Column */}
               <div className="space-y-4">
-                {assignedTo && (
+                {/* Assigned Staff/Department - FIXED: Don't render object directly */}
+                {staffInfo ? (
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-start mb-3">
+                      <FaUserTie className="w-5 h-5 text-blue-500 mt-1 mr-3 flex-shrink-0" />
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Assigned Staff</h3>
+                        <p className="text-gray-700 font-medium">{staffInfo.name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-8">
+                      <div className="flex items-center">
+                        <FaBuilding className="w-4 h-4 text-gray-400 mr-2" />
+                        <span className="text-sm text-gray-600">
+                          {staffInfo.department}
+                        </span>
+                      </div>
+                      
+                      {staffInfo.email && (
+                        <div className="flex items-center">
+                          <FaEnvelope className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="text-sm text-gray-600 truncate">
+                            {staffInfo.email}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {staffInfo.role && (
+                        <div className="sm:col-span-2">
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                            {staffInfo.role}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
                   <div className="flex items-start">
-                    <FaBuilding className="w-5 h-5 text-gray-500 mt-1 mr-3 flex-shrink-0" />
+                    <FaBuilding className="w-5 h-5 text-gray-400 mt-1 mr-3 flex-shrink-0" />
                     <div>
-                      <h3 className="font-semibold text-gray-900">
-                        Assigned Department
-                      </h3>
-                      <p className="text-gray-700">{assignedTo}</p>
+                      <h3 className="font-semibold text-gray-900">Assigned Department</h3>
+                      <p className="text-gray-700 text-italic">Not assigned yet</p>
                     </div>
                   </div>
                 )}
@@ -335,7 +423,7 @@ const IssueDetails = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Category</h3>
-                    <p className="text-gray-700">{category}</p>
+                    <p className="text-gray-700">{category || "Uncategorized"}</p>
                   </div>
                 </div>
 
@@ -357,7 +445,7 @@ const IssueDetails = () => {
               <h2 className="text-xl font-bold text-gray-900 mb-4">Description</h2>
               <div className="p-5 border rounded-lg">
                 <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {description}
+                  {description || "No description provided"}
                 </p>
               </div>
             </div>
