@@ -1,6 +1,6 @@
+// router.jsx
 import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../Layout/Home/HomeLayout";
-
 import Home from "../Home/Home";
 import AuthLayout from "../Layout/AuthLayout/AuthLayout";
 import Login from "../Login/Login";
@@ -14,7 +14,6 @@ import DashboardHome from "../Dashboard/DashboardHome";
 import SubmitIssue from "../SubmitIssue/SubmitIssue";
 import MyIssue from "../MyIssue/MyIssue";
 
-
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -27,14 +26,32 @@ export const router = createBrowserRouter([
       {
         path: "/issues",
         element: <AllIssues />,
-        loader: () => fetch('http://localhost:3000/issues')
+        loader: async () => {
+          try {
+            const response = await fetch('http://localhost:3000/issues');
+            const data = await response.json();
+
+            // Handle both old and new formats
+            if (data.success && Array.isArray(data.issues)) {
+              return data;
+            } else if (Array.isArray(data)) {
+              return { success: true, issues: data };
+            } else if (data.issues && Array.isArray(data.issues)) {
+              return data;
+            }
+
+            return { success: true, issues: [] };
+          } catch (error) {
+            console.error("Error in router loader:", error);
+            return { success: false, issues: [], error: error.message };
+          }
+        }
       },
       {
         path: "issues/:id",
         element: <IssueDetails />,
         loader: ({ params }) => fetch(`http://localhost:3000/issues/${params.id}`)
       },
-
       {
         path: "/about",
         element: <About />
@@ -46,17 +63,15 @@ export const router = createBrowserRouter([
     ]
   },
   {
-    element: <AuthLayout />, // This layout will have a simplified navbar
+    element: <AuthLayout />,
     children: [
       {
         path: "/login",
-        element: <Login> </Login>
-
+        element: <Login />
       },
       {
         path: "/signup",
-        element: <Signup> </Signup>
-
+        element: <Signup />
       }
     ]
   },
@@ -68,15 +83,40 @@ export const router = createBrowserRouter([
         index: true,
         element: <DashboardHome />
       },
+      // User routes
       {
-        path:'/dashboard/submit-issue',
-        element: <SubmitIssue> </SubmitIssue>
-
+        path: '/dashboard/submit-issue',
+        element: <SubmitIssue />
       },
-    {
-      path:'/dashboard/my-issues',
-      element: <MyIssue> </MyIssue>
-    },
+      {
+        path: '/dashboard/my-issues',
+        element: <MyIssue />
+      },
+      // Admin routes
+      // {
+      //   path: '/dashboard/admin/issues',
+      //   element: <div className="p-6">Admin: View All Issues Page (TODO)</div>
+      // },
+      // {
+      //   path: '/dashboard/admin/assign-staff',
+      //   element: <div className="p-6">Admin: Assign Staff Page (TODO)</div>
+      // },
+      // {
+      //   path: '/dashboard/admin/reject-issues',
+      //   element: <div className="p-6">Admin: Reject Issues Page (TODO)</div>
+      // },
+      // {
+      //   path: '/dashboard/admin/manage-staff',
+      //   element: <div className="p-6">Admin: Manage Staff Page (TODO)</div>
+      // },
+      // {
+      //   path: '/dashboard/admin/manage-citizens',
+      //   element: <div className="p-6">Admin: Manage Citizens Page (TODO)</div>
+      // },
+      // {
+      //   path: '/dashboard/admin/payments',
+      //   element: <div className="p-6">Admin: View Payments Page (TODO)</div>
+      // },
     ]
   }
 ]);
