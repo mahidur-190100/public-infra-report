@@ -16,14 +16,15 @@ import {
   FaUserShield,
   FaMoneyBill,
   FaUserCheck,
-  FaUserTimes
+  FaUserTimes,
+  FaUserTie
 } from 'react-icons/fa';
 import Navbar from '../Shared/Navbar/Navbar';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('user'); // 'user', 'staff', or 'admin'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,12 +41,10 @@ const DashboardLayout = () => {
       try {
         const adminData = JSON.parse(admin);
         console.log("✅ Parsed admin data:", adminData);
-        console.log("📌 Admin role:", adminData.role);
-        console.log("📌 Is admin (role === 'admin'):", adminData.role === 'admin');
         
         // Set both state updates together
         setUserData(adminData);
-        setIsAdmin(adminData.role === 'admin');
+        setUserRole('admin');
         
         console.log("✅ State updates queued for admin");
         
@@ -59,10 +58,21 @@ const DashboardLayout = () => {
         const userData = JSON.parse(user);
         console.log("✅ Parsed user data:", userData);
         
-        setUserData(userData);
-        setIsAdmin(false);
+        // Check user role from localStorage
+        const role = userData.role || 'user';
+        console.log("📌 User role detected:", role);
         
-        console.log("✅ State updates queued for user");
+        // If user is staff, redirect to staff dashboard
+        if (role === 'staff') {
+          console.log("⚠️ Staff user detected, redirecting to staff dashboard...");
+          navigate('/dashboard/staff');
+          return; // Don't set state, just redirect
+        }
+        
+        setUserData(userData);
+        setUserRole(role);
+        
+        console.log("✅ State updates queued for user with role:", role);
       } catch (error) {
         console.error('❌ Error parsing user data:', error);
         localStorage.removeItem('user');
@@ -78,8 +88,8 @@ const DashboardLayout = () => {
 
   // Add this useEffect to log when state actually updates
   useEffect(() => {
-    console.log("🔄 State updated - isAdmin:", isAdmin, "userData:", userData);
-  }, [isAdmin, userData]);
+    console.log("🔄 State updated - userRole:", userRole, "userData:", userData);
+  }, [userRole, userData]);
 
   // Regular User Menu Items
   const userMenuItems = [
@@ -156,8 +166,8 @@ const DashboardLayout = () => {
     }
   ];
 
-  // Determine menu items based on isAdmin state
-  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+  // Determine menu items based on userRole
+  const menuItems = userRole === 'admin' ? adminMenuItems : userMenuItems;
 
   const handleLogout = () => {
     localStorage.removeItem('admin');
@@ -170,6 +180,24 @@ const DashboardLayout = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // If user is staff but somehow reached here, show redirecting message
+  if (userRole === 'staff') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 mb-2">Redirecting to Staff Dashboard...</p>
+          <p className="text-sm text-gray-500">Please wait or <button 
+            onClick={() => navigate('/dashboard/staff')}
+            className="text-blue-600 hover:underline"
+          >
+            click here
+          </button> if not redirected.</p>
+        </div>
       </div>
     );
   }
@@ -199,16 +227,20 @@ const DashboardLayout = () => {
           <div className="p-3 sm:p-4 border-b">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                isAdmin ? 'bg-red-600' : 'bg-blue-600'
+                userRole === 'admin' ? 'bg-red-600' : 'bg-blue-600'
               }`}>
-                <FaChartBar className="text-white w-4 h-4 sm:w-5 sm:h-5" />
+                {userRole === 'admin' ? (
+                  <FaChartBar className="text-white w-4 h-4 sm:w-5 sm:h-5" />
+                ) : (
+                  <FaHome className="text-white w-4 h-4 sm:w-5 sm:h-5" />
+                )}
               </div>
               <div className="min-w-0">
                 <h2 className="font-bold text-sm sm:text-lg text-gray-800 truncate">
-                  {isAdmin ? 'Admin Dashboard' : 'User Dashboard'}
+                  {userRole === 'admin' ? 'Admin Dashboard' : 'User Dashboard'}
                 </h2>
                 <p className="text-xs text-gray-500 hidden sm:block">
-                  {isAdmin ? 'System Administrator' : 'Public Infra Report'}
+                  {userRole === 'admin' ? 'System Administrator' : 'Public Infrastructure Reports'}
                 </p>
               </div>
             </div>
@@ -220,11 +252,11 @@ const DashboardLayout = () => {
               </p>
               <div className="flex items-center justify-between mt-1">
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  isAdmin 
+                  userRole === 'admin' 
                     ? 'bg-red-100 text-red-800' 
                     : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {isAdmin ? 'Admin' : 'User'}
+                  {userRole === 'admin' ? 'Administrator' : 'Citizen User'}
                 </span>
                 <button
                   onClick={handleLogout}
@@ -246,7 +278,7 @@ const DashboardLayout = () => {
                 className={({ isActive }) => 
                   `flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-3 rounded-lg transition-colors ${
                     isActive 
-                      ? `${isAdmin ? 'bg-red-50 text-red-600 border-r-2 sm:border-r-4 border-red-600' : 'bg-blue-50 text-blue-600 border-r-2 sm:border-r-4 border-blue-600'}` 
+                      ? `${userRole === 'admin' ? 'bg-red-50 text-red-600 border-r-2 sm:border-r-4 border-red-600' : 'bg-blue-50 text-blue-600 border-r-2 sm:border-r-4 border-blue-600'}` 
                       : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
@@ -254,7 +286,7 @@ const DashboardLayout = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`${isActive ? (isAdmin ? 'text-red-600' : 'text-blue-600') : 'text-gray-500'} flex-shrink-0`}>
+                    <span className={`${isActive ? (userRole === 'admin' ? 'text-red-600' : 'text-blue-600') : 'text-gray-500'} flex-shrink-0`}>
                       {item.icon}
                     </span>
                     <span className="font-medium text-sm sm:text-base truncate">{item.title}</span>
@@ -263,6 +295,17 @@ const DashboardLayout = () => {
               </NavLink>
             ))}
           </nav>
+
+          {/* Role-specific notice */}
+          {userRole === 'admin' && (
+            <div className="p-3 border-t border-gray-200">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Note:</strong> Use "Manage Staff & Users" to change user roles.
+                </p>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* Main Content - Responsive */}

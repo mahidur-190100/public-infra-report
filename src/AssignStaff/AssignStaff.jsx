@@ -59,26 +59,26 @@ const AssignStaff = () => {
   // Filter pending issues
   const filteredPendingIssues = pendingIssues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         issue.location.toLowerCase().includes(searchTerm.toLowerCase());
+      issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      issue.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || issue.category === categoryFilter;
     const matchesPriority = priorityFilter === 'all' || issue.priority === priorityFilter;
-    
+
     return matchesSearch && matchesCategory && matchesPriority;
   });
 
   // Function to safely get staff name from assignedTo field
   const getStaffName = (assignedTo) => {
     if (!assignedTo) return 'Unassigned';
-    
+
     // If it's a string, return it
     if (typeof assignedTo === 'string') return assignedTo;
-    
+
     // If it's an object, extract the name
     if (typeof assignedTo === 'object' && assignedTo !== null) {
       return assignedTo.name || assignedTo.displayName || 'Staff Member';
     }
-    
+
     return 'Unassigned';
   };
 
@@ -87,10 +87,10 @@ const AssignStaff = () => {
     try {
       setLoading(prev => ({ ...prev, issues: true }));
       const response = await axios.get('http://localhost:3000/issues');
-      
+
       if (response.data.success) {
         const allIssues = response.data.issues;
-        
+
         // Clean up assignedTo fields in issues
         const cleanIssues = allIssues.map(issue => {
           if (issue.assignedTo && typeof issue.assignedTo === 'object') {
@@ -103,15 +103,15 @@ const AssignStaff = () => {
           }
           return issue;
         });
-        
+
         // Separate issues by status
-        const pending = cleanIssues.filter(issue => 
+        const pending = cleanIssues.filter(issue =>
           issue.status === 'pending' || issue.status === 'Pending'
         );
-        const inProgress = cleanIssues.filter(issue => 
+        const inProgress = cleanIssues.filter(issue =>
           issue.status === 'in progress' || issue.status === 'in-progress'
         );
-        
+
         setPendingIssues(pending);
         setInProgressIssues(inProgress);
       }
@@ -126,27 +126,27 @@ const AssignStaff = () => {
   const fetchStaffMembers = async () => {
     try {
       setLoading(prev => ({ ...prev, staff: true }));
-      
+
       // Fetch all users from MongoDB
       const response = await axios.get('http://localhost:3000/users');
-      
+
       if (response.data.success) {
         // Filter users with role "staff"
-        const staffUsers = response.data.users.filter(user => 
+        const staffUsers = response.data.users.filter(user =>
           user.role && user.role.toLowerCase() === 'staff'
         );
-        
+
         console.log('Staff users found:', staffUsers.length);
-        
+
         // Get current in-progress issues count for each staff
         const inProgressIssuesResponse = await axios.get('http://localhost:3000/issues');
         const allIssues = inProgressIssuesResponse.data.success ? inProgressIssuesResponse.data.issues : [];
-        
+
         const staffWithDetails = staffUsers.map(staff => {
           // Count issues assigned to this staff member
           const currentTasks = allIssues.filter(issue => {
             if (!issue.assignedTo) return false;
-            
+
             // Handle both string and object formats
             if (typeof issue.assignedTo === 'string') {
               return issue.assignedTo === (staff.displayName || staff.name || staff.email.split('@')[0]);
@@ -155,11 +155,11 @@ const AssignStaff = () => {
             }
             return false;
           }).length;
-          
+
           // Determine availability (you can customize this logic)
           const maxTasks = 5; // Maximum tasks a staff can handle
           const available = currentTasks < maxTasks;
-          
+
           return {
             _id: staff._id,
             name: staff.displayName || staff.name || staff.email.split('@')[0],
@@ -173,13 +173,13 @@ const AssignStaff = () => {
             maxTasks: maxTasks
           };
         });
-        
+
         setStaffMembers(staffWithDetails);
         console.log('Processed staff members:', staffWithDetails);
       }
     } catch (error) {
       console.error('Error fetching staff members:', error);
-      
+
       // Show error but continue with empty staff list
       alert('Note: Could not load staff members. Please ensure you have users with "staff" role in your database.');
       setStaffMembers([]);
@@ -192,7 +192,7 @@ const AssignStaff = () => {
     try {
       setLoading(prev => ({ ...prev, stats: true }));
       const response = await axios.get('http://localhost:3000/issues-stats');
-      
+
       if (response.data.success) {
         setStats(response.data.stats);
       }
@@ -210,71 +210,94 @@ const AssignStaff = () => {
     }
 
     try {
-      // Update issue status to "in progress" and assign staff - ONLY NAME
-      const updateData = {
-        status: 'in progress',
-        assignedTo: selectedStaff.name, // Store only the name string
+      // CRITICAL: Store staff data as a complete object
+      const assignedToData = {
+        id: selectedStaff._id || selectedStaff.email,
+        name: selectedStaff.name,
+        email: selectedStaff.email,
+        role: selectedStaff.role || 'staff',
         assignedDate: new Date().toISOString(),
-        progress: 10, // Start with 10% progress
-        timeline: [
-          ...(selectedIssue.timeline || []),
-          {
-            status: 'in progress',
-            message: `Issue assigned to ${selectedStaff.name}`,
-            updatedBy: 'Admin',
-            updatedAt: new Date().toISOString()
-          }
-        ]
+        assignedBy: 'Admin'
       };
 
-      console.log('Updating issue with data:', updateData);
+      console.log('📝 Assigning staff object:', assignedToData);
 
-      const response = await axios.patch(
-        `http://localhost:3000/issues/${selectedIssue._id}`,
-        updateData
+      // Use the /assign endpoint instead of direct patch
+      const response = await axios.post(
+        `http://localhost:3000/issues/${selectedIssue._id}/assign`,
+        {
+          staffId: selectedStaff._id || selectedStaff.email,
+          staffName: selectedStaff.name,
+          staffEmail: selectedStaff.email
+        }
       );
 
       if (response.data.success) {
-        // Update local state
-        const updatedPending = pendingIssues.filter(issue => issue._id !== selectedIssue._id);
-        const updatedIssue = {
-          ...selectedIssue,
-          ...updateData
-        };
-        
-        setPendingIssues(updatedPending);
-        setInProgressIssues([...inProgressIssues, updatedIssue]);
-        
-        // Update staff current tasks count
-        const updatedStaff = staffMembers.map(staff =>
-          staff._id === selectedStaff._id
-            ? { 
-                ...staff, 
-                currentTasks: staff.currentTasks + 1,
-                available: (staff.currentTasks + 1) < staff.maxTasks
-              }
-            : staff
-        );
-        setStaffMembers(updatedStaff);
-        
-        // Update stats
-        setStats(prev => ({
-          ...prev,
-          pending: prev.pending - 1,
-          inProgress: prev.inProgress + 1
-        }));
-        
-        alert(`Successfully assigned ${selectedStaff.name} to "${selectedIssue.title}"`);
+        console.log('✅ Assignment successful:', response.data);
+
+        // Refresh the issues list
+        fetchIssues();
+        fetchStaffMembers();
+        fetchIssueStats();
+
+        alert(`✅ Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
         setShowAssignModal(false);
         setSelectedIssue(null);
         setSelectedStaff(null);
+      } else {
+        alert('Assignment failed: ' + response.data.message);
       }
+
     } catch (error) {
-      console.error('Error assigning staff:', error);
-      alert('Failed to assign staff. Please try again.');
+      console.error('❌ Error assigning staff:', error);
+
+      // Fallback: try direct PATCH if the /assign endpoint fails
+      try {
+        console.log('🔄 Trying direct PATCH as fallback...');
+
+        const fallbackResponse = await axios.patch(
+          `http://localhost:3000/issues/${selectedIssue._id}`,
+          {
+            status: 'assigned',
+            assignedTo: {
+              id: selectedStaff._id || selectedStaff.email,
+              name: selectedStaff.name,
+              email: selectedStaff.email
+            },
+            assignedDate: new Date().toISOString(),
+            progress: 0,
+            updatedAt: new Date().toISOString(),
+            timeline: [
+              ...(selectedIssue.timeline || []),
+              {
+                status: 'assigned',
+                message: `Issue assigned to staff: ${selectedStaff.name} (${selectedStaff.email})`,
+                updatedBy: 'Admin',
+                updatedAt: new Date().toISOString()
+              }
+            ]
+          }
+        );
+
+        if (fallbackResponse.data.success) {
+          console.log('✅ Fallback assignment successful');
+          alert(`✅ Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
+
+          // Refresh data
+          fetchIssues();
+          fetchStaffMembers();
+          fetchIssueStats();
+
+          setShowAssignModal(false);
+          setSelectedIssue(null);
+          setSelectedStaff(null);
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        alert('❌ Failed to assign staff. Please check console for details.');
+      }
     }
   };
-
   const handleUpdateProgress = async (issueId, progress) => {
     try {
       const response = await axios.patch(
@@ -308,7 +331,7 @@ const AssignStaff = () => {
   const handleMarkComplete = async (issueId) => {
     try {
       const issue = inProgressIssues.find(i => i._id === issueId);
-      
+
       const response = await axios.patch(
         `http://localhost:3000/issues/${issueId}`,
         {
@@ -335,27 +358,27 @@ const AssignStaff = () => {
           if (staff) {
             const updatedStaff = staffMembers.map(s =>
               s._id === staff._id
-                ? { 
-                    ...s, 
-                    currentTasks: Math.max(0, s.currentTasks - 1),
-                    available: (s.currentTasks - 1) < s.maxTasks
-                  }
+                ? {
+                  ...s,
+                  currentTasks: Math.max(0, s.currentTasks - 1),
+                  available: (s.currentTasks - 1) < s.maxTasks
+                }
                 : s
             );
             setStaffMembers(updatedStaff);
           }
         }
-        
+
         // Remove from in-progress
         setInProgressIssues(inProgressIssues.filter(i => i._id !== issueId));
-        
+
         // Update stats
         setStats(prev => ({
           ...prev,
           inProgress: prev.inProgress - 1,
           resolved: prev.resolved + 1
         }));
-        
+
         alert(`Issue "${issue.title}" marked as completed`);
       }
     } catch (error) {
@@ -373,9 +396,9 @@ const AssignStaff = () => {
       normal: 'bg-blue-100 text-blue-800 border border-blue-200',
       low: 'bg-green-100 text-green-800 border border-green-200'
     };
-    
+
     const priorityKey = priority?.toLowerCase() || 'normal';
-    
+
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${priorityMap[priorityKey] || 'bg-gray-100 text-gray-800'}`}>
         {priority?.toUpperCase() || 'NORMAL'}
@@ -391,9 +414,9 @@ const AssignStaff = () => {
       resolved: 'bg-green-100 text-green-800 border border-green-200',
       completed: 'bg-green-100 text-green-800 border border-green-200'
     };
-    
+
     const statusKey = status?.toLowerCase() || 'pending';
-    
+
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusMap[statusKey] || 'bg-gray-100 text-gray-800'}`}>
         {status?.toUpperCase()?.replace('-', ' ') || 'PENDING'}
@@ -496,7 +519,7 @@ const AssignStaff = () => {
               <FaListAlt className="w-8 h-8 text-blue-500" />
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow border border-yellow-100">
             <div className="flex items-center justify-between">
               <div>
@@ -506,7 +529,7 @@ const AssignStaff = () => {
               <FaRegClock className="w-8 h-8 text-yellow-500" />
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow border border-purple-100">
             <div className="flex items-center justify-between">
               <div>
@@ -516,7 +539,7 @@ const AssignStaff = () => {
               <FaTachometerAlt className="w-8 h-8 text-purple-500" />
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl shadow border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -571,7 +594,7 @@ const AssignStaff = () => {
                 className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
               <select
@@ -586,7 +609,7 @@ const AssignStaff = () => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
               <select
@@ -601,7 +624,7 @@ const AssignStaff = () => {
                 ))}
               </select>
             </div>
-            
+
             <div className="flex items-end">
               <button
                 onClick={() => {
@@ -631,7 +654,7 @@ const AssignStaff = () => {
                   Issues waiting for staff assignment
                 </p>
               </div>
-              
+
               <div className="max-h-[600px] overflow-y-auto">
                 {filteredPendingIssues.length > 0 ? (
                   filteredPendingIssues.map((issue) => (
@@ -644,7 +667,7 @@ const AssignStaff = () => {
                           </div>
                           <h3 className="font-bold text-gray-900 text-lg mb-2">{issue.title}</h3>
                           <p className="text-gray-600 mb-3">{issue.description}</p>
-                          
+
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div className="flex items-center gap-2 text-gray-500">
                               <FaMapMarkerAlt className="w-4 h-4" />
@@ -664,7 +687,7 @@ const AssignStaff = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="ml-4">
                           <button
                             onClick={() => {
@@ -687,7 +710,7 @@ const AssignStaff = () => {
                     </div>
                     <p className="text-gray-500 text-lg">No pending issues found</p>
                     <p className="text-gray-400 text-sm mt-2">
-                      {searchTerm || categoryFilter !== 'all' || priorityFilter !== 'all' 
+                      {searchTerm || categoryFilter !== 'all' || priorityFilter !== 'all'
                         ? 'Try changing your search or filter criteria'
                         : 'All issues have been assigned'}
                     </p>
@@ -710,7 +733,7 @@ const AssignStaff = () => {
                   Issues currently being worked on
                 </p>
               </div>
-              
+
               <div className="max-h-[300px] overflow-y-auto">
                 {inProgressIssues.length > 0 ? (
                   inProgressIssues.map((issue) => (
@@ -722,7 +745,7 @@ const AssignStaff = () => {
                             {getStatusBadge(issue.status)}
                           </div>
                         </div>
-                        
+
                         <div className="mb-4">
                           <div className="flex justify-between text-sm text-gray-500 mb-1">
                             <span>Progress</span>
@@ -735,7 +758,7 @@ const AssignStaff = () => {
                             ></div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center gap-2 text-gray-500">
                             <FaUser className="w-4 h-4" />
@@ -748,7 +771,7 @@ const AssignStaff = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleUpdateProgress(issue._id, Math.min(100, (issue.progress || 0) + 25))}
@@ -791,7 +814,7 @@ const AssignStaff = () => {
                   Users with "staff" role from MongoDB
                 </p>
               </div>
-              
+
               <div className="max-h-[300px] overflow-y-auto">
                 {staffMembers.length > 0 ? (
                   staffMembers.map((staff) => {
@@ -810,7 +833,7 @@ const AssignStaff = () => {
                               </p>
                             </div>
                           </div>
-                          
+
                           <div className="text-right">
                             <div className="text-sm font-medium text-gray-900">
                               {staff.currentTasks}/{staff.maxTasks} tasks
@@ -850,11 +873,11 @@ const AssignStaff = () => {
       {showAssignModal && selectedIssue && (
         <>
           {/* Background overlay */}
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowAssignModal(false)}
           />
-          
+
           {/* Modal container */}
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
@@ -870,7 +893,7 @@ const AssignStaff = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Scrollable content area */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
                 {/* Issue Details */}
@@ -886,11 +909,11 @@ const AssignStaff = () => {
                     <p><span className="text-gray-600">Reported on:</span> {formatDate(selectedIssue.reportedAt)}</p>
                   </div>
                 </div>
-                
+
                 {/* Staff Selection */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-gray-800 mb-3">Select Staff Member</h4>
-                  
+
                   {staffMembers.length === 0 ? (
                     <div className="text-center p-8 border border-gray-200 rounded-lg">
                       <FaExclamationTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
@@ -910,11 +933,10 @@ const AssignStaff = () => {
                               <button
                                 key={staff._id}
                                 onClick={() => setSelectedStaff(staff)}
-                                className={`p-4 border rounded-lg text-left transition-all ${
-                                  selectedStaff?._id === staff._id
+                                className={`p-4 border rounded-lg text-left transition-all ${selectedStaff?._id === staff._id
                                     ? 'border-blue-500 bg-blue-50'
                                     : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
@@ -939,7 +961,7 @@ const AssignStaff = () => {
                             );
                           })}
                       </div>
-                      
+
                       {/* Fully booked staff */}
                       {staffMembers.filter(staff => staff.currentTasks >= staff.maxTasks).length > 0 && (
                         <div className="mt-4">
@@ -975,7 +997,7 @@ const AssignStaff = () => {
                     </>
                   )}
                 </div>
-                
+
                 {/* Selected Staff Preview */}
                 {selectedStaff && (
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -993,7 +1015,7 @@ const AssignStaff = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Action Buttons - sticky bottom */}
                 <div className="sticky bottom-0 bg-white pt-4 pb-2">
                   <div className="flex justify-end gap-3">

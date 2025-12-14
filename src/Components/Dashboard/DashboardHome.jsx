@@ -6,13 +6,13 @@ import {
   FaPlus, FaEdit, FaStar, FaCrown, FaHistory, FaHome,
   FaClipboardList, FaUserShield, FaUserTimes, FaUsers, 
   FaUserCheck, FaMoneyBill, FaChartBar, FaExclamationTriangle,
-  FaCheckCircle, FaClock
+  FaCheckCircle, FaClock, FaUserTie
 } from 'react-icons/fa';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('user'); // 'user', 'staff', or 'admin'
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalIssues: 0,
@@ -22,11 +22,12 @@ const DashboardHome = () => {
   const [loading, setLoading] = useState(true);
 
   // Create a memoized version of fetchDashboardData
-  const fetchDashboardData = useCallback(async (adminStatus) => {
-    console.log("📊 fetchDashboardData called with adminStatus:", adminStatus);
+  const fetchDashboardData = useCallback(async (role) => {
+    console.log("📊 fetchDashboardData called with role:", role);
     
-    if (!adminStatus) {
-      console.log("📊 Not admin, skipping data fetch");
+    // Only fetch admin stats if user is admin
+    if (role !== 'admin') {
+      console.log("📊 Not admin, skipping admin data fetch");
       setLoading(false);
       return;
     }
@@ -139,15 +140,15 @@ const DashboardHome = () => {
     console.log("📱 DashboardHome - localStorage admin:", admin);
     console.log("📱 DashboardHome - localStorage user:", user);
     
-    let currentIsAdmin = false;
     let currentUserData = null;
+    let currentUserRole = 'user';
     
     if (admin) {
       try {
         const adminData = JSON.parse(admin);
         currentUserData = adminData;
-        currentIsAdmin = adminData.role === 'admin' && adminData.isAdmin === true;
-        console.log("📱 Admin check - role:", adminData.role, "isAdmin:", adminData.isAdmin);
+        currentUserRole = 'admin';
+        console.log("📱 Admin check - role: admin");
       } catch (error) {
         console.error('Error parsing admin:', error);
       }
@@ -155,31 +156,33 @@ const DashboardHome = () => {
       try {
         const userData = JSON.parse(user);
         currentUserData = userData;
-        currentIsAdmin = false;
+        // Check if user has a role property in localStorage
+        currentUserRole = userData.role || 'user';
+        console.log("📱 User check - role:", currentUserRole);
       } catch (error) {
         console.error('Error parsing user:', error);
       }
     }
     
-    console.log("📱 Direct check - isAdmin:", currentIsAdmin);
+    console.log("📱 Direct check - userRole:", currentUserRole);
     console.log("📱 Direct check - userData:", currentUserData);
     
     // Set state
     setUserData(currentUserData);
-    setIsAdmin(currentIsAdmin);
+    setUserRole(currentUserRole);
     
-    console.log("📱 State set - isAdmin:", currentIsAdmin);
+    console.log("📱 State set - userRole:", currentUserRole);
     
-    // Fetch dashboard data with the current admin status
-    fetchDashboardData(currentIsAdmin);
+    // Fetch dashboard data with the current user role
+    fetchDashboardData(currentUserRole);
     
     console.log("=== DASHBOARD HOME DEBUG END ===");
   }, [navigate, fetchDashboardData]);
 
-  // Refresh stats function
+  // Refresh stats function (for admin only)
   const refreshStats = () => {
     setLoading(true);
-    fetchDashboardData(isAdmin);
+    fetchDashboardData(userRole);
   };
 
   if (loading) {
@@ -198,11 +201,31 @@ const DashboardHome = () => {
     );
   }
 
-  console.log("🎯 DashboardHome - Rendering with isAdmin:", isAdmin);
+  console.log("🎯 DashboardHome - Rendering with userRole:", userRole);
   console.log("📊 Current stats:", stats);
 
-  // Regular User Dashboard
-  if (!isAdmin) {
+  // ==================== STAFF DASHBOARD ====================
+  if (userRole === 'staff') {
+    console.log("👔 Rendering STAFF dashboard");
+    
+    // Check if user should be redirected to staff dashboard
+    // Staff should always use the StaffDashboard component, not DashboardHome
+    // This is a fallback if they somehow land here
+    useEffect(() => {
+      console.log("🔄 Staff user detected, redirecting to staff dashboard...");
+      navigate('/dashboard/staff');
+    }, [navigate]);
+    
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Redirecting to Staff Dashboard...</p>
+      </div>
+    );
+  }
+
+  // ==================== REGULAR USER DASHBOARD ====================
+  if (userRole === 'user') {
     console.log("👤 Rendering USER dashboard");
     return (
       <div className="p-3 sm:p-4 md:p-6">
@@ -216,6 +239,9 @@ const DashboardHome = () => {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">User Dashboard</h1>
               <p className="text-gray-600 text-sm sm:text-base mt-1">
                 Welcome back, {userData?.displayName || userData?.email?.split('@')[0]}
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                  Regular User
+                </span>
               </p>
             </div>
           </div>
@@ -386,7 +412,7 @@ const DashboardHome = () => {
     );
   }
 
-  // Admin Dashboard
+  // ==================== ADMIN DASHBOARD ====================
   console.log("👑 Rendering ADMIN dashboard");
   return (
     <div className="p-3 sm:p-4 md:p-6">
@@ -401,6 +427,9 @@ const DashboardHome = () => {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-gray-600 text-sm sm:text-base mt-1">
                 System Administrator • {userData?.displayName || userData?.email}
+                <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                  Admin
+                </span>
               </p>
             </div>
           </div>

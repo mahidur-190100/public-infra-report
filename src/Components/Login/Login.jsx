@@ -1,4 +1,4 @@
-// Login.jsx - Complete updated version with block check
+// Login.jsx - Complete updated version with staff support
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -7,7 +7,7 @@ import axios from 'axios';
 
 const Login = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
-    const { loginUser, signInWithGoogle, signOutUser } = useAuth(); // Added signOutUser
+    const { loginUser, signInWithGoogle, signOutUser } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = (data) => {
@@ -40,6 +40,7 @@ const Login = () => {
                                         // Clear any existing storage
                                         localStorage.removeItem('user');
                                         localStorage.removeItem('admin');
+                                        localStorage.removeItem('staff');
                                         
                                         alert('🚫 Your account has been blocked. Please contact the administrator.');
                                     })
@@ -51,58 +52,53 @@ const Login = () => {
                             }
                             
                             console.log("✅ User role:", userData.role);
-                            console.log("✅ Is admin (role === 'admin'):", userData.role === 'admin');
                             
-                            // ✅ CHECK IF USER IS ADMIN
-                            if (userData.role === 'admin') {
-                                console.log('🎯 ADMIN DETECTED FROM BACKEND:', userData.email);
-                                
-                                // Save as ADMIN to localStorage
-                                const adminData = {
-                                    email: userData.email,
-                                    displayName: userData.displayName || userData.email.split('@')[0],
-                                    photoURL: result.user.photoURL || userData.photoURL,
-                                    uid: result.user.uid,
-                                    role: 'admin',
-                                    isAdmin: true,
-                                    lastLogin: new Date().toISOString()
-                                };
-                                
-                                localStorage.setItem('admin', JSON.stringify(adminData));
-                                console.log('✅ Admin saved to localStorage:', adminData);
-                                
-                                // Clear regular user data if exists
-                                localStorage.removeItem('user');
-                                console.log('✅ Removed user data from localStorage');
-                                
-                                // Navigate to DASHBOARD
-                                console.log('✅ Navigating to /dashboard');
-                                navigate('/dashboard');
-                                
-                            } else {
-                                // Regular user
-                                console.log('✅ Regular user detected');
-                                
-                                // Save as REGULAR USER to localStorage
-                                const userDataObj = {
-                                    email: result.user.email,
-                                    displayName: result.user.displayName || result.user.email.split('@')[0],
-                                    photoURL: result.user.photoURL || userData.photoURL,
-                                    uid: result.user.uid,
-                                    role: 'user',
-                                    lastLogin: new Date().toISOString()
-                                };
-                                
-                                localStorage.setItem('user', JSON.stringify(userDataObj));
-                                console.log('✅ User saved to localStorage:', userDataObj);
-                                
-                                // Clear admin data if exists
-                                localStorage.removeItem('admin');
-                                console.log('✅ Removed admin data from localStorage');
-                                
-                                // Navigate to DASHBOARD
-                                console.log('✅ Navigating to /dashboard');
-                                navigate('/dashboard');
+                            // ✅ DETERMINE USER TYPE AND REDIRECT
+                            const userRole = userData.role || 'user';
+                            
+                            // Prepare user data object
+                            const userSessionData = {
+                                email: userData.email,
+                                displayName: userData.displayName || userData.email.split('@')[0],
+                                photoURL: result.user.photoURL || userData.photoURL,
+                                uid: result.user.uid,
+                                role: userRole,
+                                name: userData.name || userData.displayName,
+                                id: userData._id || userData.email,
+                                createdAt: userData.createdAt,
+                                lastLogin: new Date().toISOString()
+                            };
+                            
+                            // Clear all localStorage first
+                            localStorage.removeItem('user');
+                            localStorage.removeItem('admin');
+                            localStorage.removeItem('staff');
+                            
+                            // Save to appropriate localStorage and navigate based on role
+                            switch(userRole) {
+                                case 'admin':
+                                    console.log('🎯 ADMIN DETECTED FROM BACKEND:', userData.email);
+                                    userSessionData.isAdmin = true;
+                                    localStorage.setItem('admin', JSON.stringify(userSessionData));
+                                    console.log('✅ Admin saved to localStorage');
+                                    navigate('/dashboard/admin');
+                                    break;
+                                    
+                                case 'staff':
+                                    console.log('👔 STAFF DETECTED FROM BACKEND:', userData.email);
+                                    userSessionData.isStaff = true;
+                                    localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    console.log('✅ Staff saved to localStorage');
+                                    navigate('/dashboard/staff');
+                                    break;
+                                    
+                                case 'user':
+                                default:
+                                    console.log('👤 REGULAR USER DETECTED:', userData.email);
+                                    localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    console.log('✅ User saved to localStorage');
+                                    navigate('/dashboard');
+                                    break;
                             }
                         }
                     })
@@ -127,19 +123,34 @@ const Login = () => {
                         // Save to backend
                         axios.post('http://localhost:3000/users', newUser)
                             .then(() => {
-                                // Save as regular user to localStorage
-                                localStorage.setItem('user', JSON.stringify(newUser));
+                                // Clear all localStorage
+                                localStorage.removeItem('user');
                                 localStorage.removeItem('admin');
+                                localStorage.removeItem('staff');
+                                
+                                // Save as regular user
+                                const userSessionData = {
+                                    ...newUser,
+                                    lastLogin: new Date().toISOString()
+                                };
+                                localStorage.setItem('user', JSON.stringify(userSessionData));
                                 console.log('✅ New regular user created and saved to localStorage');
                                 
-                                // Navigate to dashboard
+                                // Navigate to regular user dashboard
                                 navigate('/dashboard');
                             })
                             .catch(backendError => {
                                 console.error('❌ Error creating user in backend:', backendError);
                                 // Still save to localStorage and navigate
-                                localStorage.setItem('user', JSON.stringify(newUser));
+                                localStorage.removeItem('user');
                                 localStorage.removeItem('admin');
+                                localStorage.removeItem('staff');
+                                
+                                const userSessionData = {
+                                    ...newUser,
+                                    lastLogin: new Date().toISOString()
+                                };
+                                localStorage.setItem('user', JSON.stringify(userSessionData));
                                 navigate('/dashboard');
                             });
                     });
@@ -179,6 +190,7 @@ const Login = () => {
                                         // Clear any existing storage
                                         localStorage.removeItem('user');
                                         localStorage.removeItem('admin');
+                                        localStorage.removeItem('staff');
                                         
                                         alert('🚫 Your account has been blocked. Please contact the administrator.');
                                     })
@@ -189,33 +201,50 @@ const Login = () => {
                                 return; // Stop further execution
                             }
                             
-                            if (userData.role === 'admin') {
-                                // Save as ADMIN
-                                localStorage.setItem('admin', JSON.stringify({
-                                    email: userData.email,
-                                    displayName: userData.displayName || userData.email.split('@')[0],
-                                    photoURL: result.user.photoURL || userData.photoURL,
-                                    uid: result.user.uid,
-                                    role: 'admin',
-                                    isAdmin: true,
-                                    provider: 'google',
-                                    lastLogin: new Date().toISOString()
-                                }));
-                                localStorage.removeItem('user');
-                                navigate('/dashboard');
-                            } else {
-                                // Save as regular user
-                                localStorage.setItem('user', JSON.stringify({
-                                    email: result.user.email,
-                                    displayName: result.user.displayName || result.user.email.split('@')[0],
-                                    photoURL: result.user.photoURL || userData.photoURL,
-                                    uid: result.user.uid,
-                                    role: 'user',
-                                    provider: 'google',
-                                    lastLogin: new Date().toISOString()
-                                }));
-                                localStorage.removeItem('admin');
-                                navigate('/dashboard');
+                            // ✅ DETERMINE USER TYPE AND REDIRECT
+                            const userRole = userData.role || 'user';
+                            
+                            // Prepare user data object
+                            const userSessionData = {
+                                email: userData.email,
+                                displayName: userData.displayName || result.user.displayName || userData.email.split('@')[0],
+                                photoURL: result.user.photoURL || userData.photoURL,
+                                uid: result.user.uid,
+                                role: userRole,
+                                provider: 'google',
+                                name: userData.name || userData.displayName,
+                                id: userData._id || userData.email,
+                                createdAt: userData.createdAt,
+                                lastLogin: new Date().toISOString()
+                            };
+                            
+                            // Clear all localStorage first
+                            localStorage.removeItem('user');
+                            localStorage.removeItem('admin');
+                            localStorage.removeItem('staff');
+                            
+                            // Save and navigate based on role
+                            switch(userRole) {
+                                case 'admin':
+                                    console.log('🎯 ADMIN DETECTED (Google):', userData.email);
+                                    userSessionData.isAdmin = true;
+                                    localStorage.setItem('admin', JSON.stringify(userSessionData));
+                                    navigate('/dashboard/admin');
+                                    break;
+                                    
+                                case 'staff':
+                                    console.log('👔 STAFF DETECTED (Google):', userData.email);
+                                    userSessionData.isStaff = true;
+                                    localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    navigate('/dashboard/staff');
+                                    break;
+                                    
+                                case 'user':
+                                default:
+                                    console.log('👤 REGULAR USER (Google):', userData.email);
+                                    localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    navigate('/dashboard');
+                                    break;
                             }
                         }
                     })
@@ -235,13 +264,27 @@ const Login = () => {
                         
                         axios.post('http://localhost:3000/users', newUser)
                             .then(() => {
-                                localStorage.setItem('user', JSON.stringify(newUser));
+                                localStorage.removeItem('user');
                                 localStorage.removeItem('admin');
+                                localStorage.removeItem('staff');
+                                
+                                const userSessionData = {
+                                    ...newUser,
+                                    lastLogin: new Date().toISOString()
+                                };
+                                localStorage.setItem('user', JSON.stringify(userSessionData));
                                 navigate('/dashboard');
                             })
                             .catch(backendError => {
-                                localStorage.setItem('user', JSON.stringify(newUser));
+                                localStorage.removeItem('user');
                                 localStorage.removeItem('admin');
+                                localStorage.removeItem('staff');
+                                
+                                const userSessionData = {
+                                    ...newUser,
+                                    lastLogin: new Date().toISOString()
+                                };
+                                localStorage.setItem('user', JSON.stringify(userSessionData));
                                 navigate('/dashboard');
                             });
                     });
@@ -260,6 +303,11 @@ const Login = () => {
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-gray-800 mb-2">Public Infrastructure Report</h1>
                             <p className="text-gray-600">Login to report and track infrastructure issues</p>
+                            <div className="mt-4 flex justify-center gap-3">
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">User</span>
+                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Staff</span>
+                                <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Admin</span>
+                            </div>
                         </div>
 
                         <form className="space-y-4" onSubmit={handleSubmit(handleLogin)}>

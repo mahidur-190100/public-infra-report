@@ -1,4 +1,5 @@
 // router.jsx
+// router.jsx
 import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../Layout/Home/HomeLayout";
 import Home from "../Home/Home";
@@ -18,7 +19,12 @@ import PaymentSuccess from "../../PaymentSuccess/PaymentSuccess";
 import ViewPayment from "../../ViewPayment/ViewPayment";
 import AssignStaff from "../../AssignStaff/AssignStaff";
 import ManageStaff from "../../ManageStaff/ManageStaff";
-import AdminLayout from "../Dashboard/AdminLayout"; // Add AdminLayout import
+import AdminLayout from "../Dashboard/AdminLayout"; 
+import StaffLayout from "../Dashboard/StaffLayout"; 
+import StaffDashboard from "../Dashboard/StaffDashboard";
+import ResolvedIssues from "../ResolvedIssues/ResolvedIssues";
+import PendingIssues from "../PendingIssues/PendingIssues";
+import AssignedIssue from "../AssignedIssue/AssignedIssue";
 
 
 export const router = createBrowserRouter([
@@ -82,7 +88,7 @@ export const router = createBrowserRouter([
       }
     ]
   },
-  // Regular Dashboard Layout (for users)
+  // Regular Dashboard Layout (for users/citizens)
   {
     path: '/dashboard',
     element: <DashboardLayout />,
@@ -131,6 +137,37 @@ export const router = createBrowserRouter([
         path: 'payments',
         element: <ViewPayment />
       },
+    ]
+  },
+  // Staff routes with StaffLayout
+  {
+    path: '/dashboard/staff',
+    element: <StaffLayout />,
+    children: [
+      {
+        index: true,
+        element: <StaffDashboard />
+      },
+      {
+        path: 'my-issues',
+        element: <AssignedIssue></AssignedIssue> // You need to create this component
+      },
+      {
+        path: 'pending-issues',
+        element: <PendingIssues /> // You need to create this component
+      },
+      {
+        path: 'resolved-issues',
+        element: <ResolvedIssues /> // You need to create this component
+      },
+      // {
+      //   path: 'today-tasks',
+      //   element: <TodayTasks /> // You need to create this component
+      // },
+      // {
+      //   path: 'rejected-issues',
+      //   element: <RejectedIssues /> // You need to create this component
+      // },
     ]
   }
 ]);
