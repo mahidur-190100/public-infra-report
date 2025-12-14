@@ -501,7 +501,7 @@ const AssignStaff = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Pending Issues</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-2xl font-bold text-yellow-600">{filteredPendingIssues.length}</p>
               </div>
               <FaRegClock className="w-8 h-8 text-yellow-500" />
             </div>

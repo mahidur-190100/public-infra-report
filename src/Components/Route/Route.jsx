@@ -18,6 +18,7 @@ import PaymentSuccess from "../../PaymentSuccess/PaymentSuccess";
 import ViewPayment from "../../ViewPayment/ViewPayment";
 import AssignStaff from "../../AssignStaff/AssignStaff";
 import ManageStaff from "../../ManageStaff/ManageStaff";
+import AdminLayout from "../Dashboard/AdminLayout"; // Add AdminLayout import
 
 
 export const router = createBrowserRouter([
@@ -81,6 +82,7 @@ export const router = createBrowserRouter([
       }
     ]
   },
+  // Regular Dashboard Layout (for users)
   {
     path: '/dashboard',
     element: <DashboardLayout />,
@@ -91,49 +93,43 @@ export const router = createBrowserRouter([
       },
       // User routes
       {
-        path: '/dashboard/submit-issue',
+        path: 'submit-issue',
         element: <SubmitIssue />
       },
       {
-        path: '/dashboard/my-issues',
+        path: 'my-issues',
         element: <MyIssue />
       },
       {
-        path: '/dashboard/premium',
-        element: <PremiumSubscription> </PremiumSubscription>
+        path: 'premium',
+        element: <PremiumSubscription />
       },
       {
-        path: '/dashboard/payment-success',
-        element: <PaymentSuccess> </PaymentSuccess>
+        path: 'payment-success',
+        element: <PaymentSuccess />
       },
-
-      // Admin routes
-      // {
-      //   path: '/dashboard/admin/issues',
-      //   element: <div className="p-6">Admin: View All Issues Page (TODO)</div>
-      // },
-
-      // admin
-    
+    ]
+  },
+  // Admin routes with AdminLayout
+  {
+    path: '/dashboard/admin',
+    element: <AdminLayout />,
+    children: [
       {
-        path: '/dashboard/admin/assign-staff',
-        element: <AssignStaff> </AssignStaff>
+        index: true,
+        element: <DashboardHome />
       },
-      // {
-      //   path: '/dashboard/admin/reject-issues',
-      //   element: <div className="p-6">Admin: Reject Issues Page (TODO)</div>
-      // },
       {
-        path: '/dashboard/admin/manage-staff',
-        element: <ManageStaff> </ManageStaff>
+        path: 'assign-staff',
+        element: <AssignStaff />
       },
-      // {
-      //   path: '/dashboard/admin/manage-citizens',
-      //   element: <div className="p-6">Admin: Manage Citizens Page (TODO)</div>
-      // },
       {
-        path: '/dashboard/admin/payments',
-        element: <ViewPayment> </ViewPayment>
+        path: 'manage-staff',
+        element: <ManageStaff />
+      },
+      {
+        path: 'payments',
+        element: <ViewPayment />
       },
     ]
   }
