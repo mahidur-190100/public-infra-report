@@ -313,36 +313,7 @@ const DashboardHome = () => {
               </div>
             </div>
 
-            {/* Boost Priority Card */}
-            <div onClick={() => navigate('/dashboard/boost-priority')} className="group block cursor-pointer">
-              <div className="bg-white rounded-lg sm:rounded-xl shadow hover:shadow-lg sm:shadow-md sm:hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 overflow-hidden h-full">
-                <div className="bg-gradient-to-r from-yellow-500 to-amber-600 h-1 sm:h-2"></div>
-                <div className="p-3 sm:p-4 md:p-6">
-                  <div className="flex items-start gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
-                    <div className="bg-yellow-100 text-yellow-600 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                      <FaStar className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
-                    </div>
-                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      Boost Priority
-                    </h3>
-                  </div>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mb-4 sm:mb-6">
-                    Increase priority level of your important issues
-                  </p>
-                  <div className="flex items-center text-blue-600 font-medium text-xs sm:text-sm">
-                    <span>Access Now</span>
-                    <svg 
-                      className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2 transform group-hover:translate-x-1 transition-transform" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
+           
 
             {/* Premium Subscription Card */}
             <div onClick={() => navigate('/dashboard/premium')} className="group block cursor-pointer">
@@ -376,35 +347,7 @@ const DashboardHome = () => {
             </div>
 
             {/* Track Activities Card */}
-            <div onClick={() => navigate('/dashboard/activities')} className="group block cursor-pointer">
-              <div className="bg-white rounded-lg sm:rounded-xl shadow hover:shadow-lg sm:shadow-md sm:hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 overflow-hidden h-full">
-                <div className="bg-gradient-to-r from-gray-500 to-gray-600 h-1 sm:h-2"></div>
-                <div className="p-3 sm:p-4 md:p-6">
-                  <div className="flex items-start gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
-                    <div className="bg-gray-100 text-gray-600 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                      <FaHistory className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
-                    </div>
-                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      Track Activities
-                    </h3>
-                  </div>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base mb-4 sm:mb-6">
-                    View your issue history and activity log
-                  </p>
-                  <div className="flex items-center text-blue-600 font-medium text-xs sm:text-sm">
-                    <span>Access Now</span>
-                    <svg 
-                      className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2 transform group-hover:translate-x-1 transition-transform" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
 
           </div>
         </div>

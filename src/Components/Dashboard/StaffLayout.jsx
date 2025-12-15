@@ -91,26 +91,14 @@ const StaffLayout = () => {
       path: '/dashboard/staff/my-issues',
       icon: <FaClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-    {
-      title: 'Pending Issues',
-      path: '/dashboard/staff/pending-issues',
-      icon: <FaClock className="w-4 h-4 sm:w-5 sm:h-5" />
-    },
+   
     {
       title: 'Resolved Issues',
       path: '/dashboard/staff/resolved-issues',
       icon: <FaCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-    {
-      title: 'Today\'s Tasks',
-      path: '/dashboard/staff/today-tasks',
-      icon: <FaCalendarDay className="w-4 h-4 sm:w-5 sm:h-5" />
-    },
-    {
-      title: 'Rejected Issues',
-      path: '/dashboard/staff/rejected-issues',
-      icon: <FaExclamationTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
-    }
+    
+    
   ];
 
   const handleLogout = () => {

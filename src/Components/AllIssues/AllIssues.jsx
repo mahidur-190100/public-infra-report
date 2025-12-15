@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLoaderData } from 'react-router-dom';
 import IssueCard from '../IssueCard/IssueCard';
-import { FaSearch, FaSortAmountDown, FaSortAmountUp, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaSortAmountDown, FaSortAmountUp, FaFilter, FaTimes, FaSync } from 'react-icons/fa';
 
 const AllIssues = () => {
     const loaderData = useLoaderData();
@@ -9,6 +9,7 @@ const AllIssues = () => {
     const [allIssues, setAllIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
     
     // New state for sorting and filtering
     const [sortBy, setSortBy] = useState('recent'); // recent, upvotes, title, status, priority
@@ -20,47 +21,123 @@ const AllIssues = () => {
         priority: 'all'
     });
     
-    useEffect(() => {
+    // Function to fetch fresh data from API
+    const fetchIssues = async () => {
         try {
-            console.log("Loader data received:", loaderData);
+            setRefreshing(true);
+            const response = await fetch('http://localhost:3000/issues');
             
-            // Handle different response formats
-            if (loaderData.success && Array.isArray(loaderData.issues)) {
-                // New format: { success: true, issues: [...] }
-                setAllIssues(loaderData.issues);
-                console.log("Using new format, issues count:", loaderData.issues.length);
-            } else if (Array.isArray(loaderData)) {
-                // Old format: raw array
-                setAllIssues(loaderData);
-                console.log("Using old format, issues count:", loaderData.length);
-            } else if (loaderData && loaderData.issues && Array.isArray(loaderData.issues)) {
-                // Another possible format
-                setAllIssues(loaderData.issues);
-                console.log("Using alternative format, issues count:", loaderData.issues.length);
-            } else {
-                // Default to empty array
-                console.warn("Unexpected data format, defaulting to empty array:", loaderData);
-                setAllIssues([]);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
+            const data = await response.json();
+            
+            if (data.success && Array.isArray(data.issues)) {
+                console.log(`Fetched ${data.issues.length} issues from API`);
+                setAllIssues(data.issues);
+            } else {
+                console.warn('Unexpected API response format:', data);
+                // Fallback to loader data
+                handleLoaderData(loaderData);
+            }
+        } catch (err) {
+            console.error("Error fetching issues:", err);
+            setError(err.message);
+            // Fallback to loader data
+            handleLoaderData(loaderData);
+        } finally {
+            setRefreshing(false);
             setLoading(false);
+        }
+    };
+
+    // Function to handle loader data
+    const handleLoaderData = (data) => {
+        try {
+            console.log("Processing loader data...");
+            
+            // Handle different response formats
+            if (data.success && Array.isArray(data.issues)) {
+                // New format: { success: true, issues: [...] }
+                setAllIssues(data.issues);
+                console.log("Using new format, issues count:", data.issues.length);
+            } else if (Array.isArray(data)) {
+                // Old format: raw array
+                setAllIssues(data);
+                console.log("Using old format, issues count:", data.length);
+            } else if (data && data.issues && Array.isArray(data.issues)) {
+                // Another possible format
+                setAllIssues(data.issues);
+                console.log("Using alternative format, issues count:", data.issues.length);
+            } else {
+                // Default to empty array
+                console.warn("Unexpected data format, defaulting to empty array:", data);
+                setAllIssues([]);
+            }
         } catch (err) {
             console.error("Error processing data:", err);
             setError(err.message);
-            setLoading(false);
         }
+    };
+
+    // Initial load from loader data
+    useEffect(() => {
+        handleLoaderData(loaderData);
+        setLoading(false);
     }, [loaderData]);
+
+    // Auto-refresh every 30 seconds to catch updates
+    useEffect(() => {
+        const interval = setInterval(() => {
+            console.log("Auto-refreshing issues data...");
+            fetchIssues();
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Create a custom event listener for issue updates
+    useEffect(() => {
+        const handleIssueUpdate = (event) => {
+            console.log("Received issue update event:", event.detail);
+            // Refresh data when we get an update event
+            fetchIssues();
+        };
+
+        // Listen for custom events
+        window.addEventListener('issue-rejected', handleIssueUpdate);
+        window.addEventListener('issue-created', handleIssueUpdate);
+        window.addEventListener('issue-updated', handleIssueUpdate);
+
+        return () => {
+            window.removeEventListener('issue-rejected', handleIssueUpdate);
+            window.removeEventListener('issue-created', handleIssueUpdate);
+            window.removeEventListener('issue-updated', handleIssueUpdate);
+        };
+    }, []);
+
+    // Function to trigger a refresh manually
+    const refreshData = async () => {
+        await fetchIssues();
+    };
 
     // Get unique categories, statuses, priorities for filters
     const availableCategories = [...new Set(allIssues.map(issue => issue.category).filter(Boolean))].sort();
     const availableStatuses = [...new Set(allIssues.map(issue => issue.status).filter(Boolean))].sort();
     const availablePriorities = [...new Set(allIssues.map(issue => issue.priority).filter(Boolean))].sort();
 
+    // Filter out rejected issues (they shouldn't appear in all issues)
+    const filteredOutRejected = allIssues.filter(issue => {
+        const status = issue.status ? issue.status.toLowerCase() : '';
+        return status !== 'rejected';
+    });
+
     // Filter and sort issues
     const getFilteredAndSortedIssues = () => {
         // First apply search filter
         let filtered = searchTerm
-            ? allIssues.filter(issue => {
+            ? filteredOutRejected.filter(issue => {
                 if (!issue) return false;
                 
                 const searchLower = searchTerm.toLowerCase();
@@ -74,7 +151,7 @@ const AllIssues = () => {
                 
                 return titleMatch || descriptionMatch || locationMatch || categoryMatch || reportedByMatch;
             })
-            : allIssues;
+            : filteredOutRejected;
 
         // Apply additional filters
         if (filters.category !== 'all') {
@@ -125,8 +202,8 @@ const AllIssues = () => {
                         : aValue.localeCompare(bValue);
                 
                 case 'priority':
-                    // Custom priority order: high > normal
-                    const priorityOrder = { 'high': 2, 'normal': 1, 'low': 0 };
+                    // Custom priority order: high > normal > low
+                    const priorityOrder = { 'high': 3, 'medium': 2, 'normal': 1, 'low': 0 };
                     aValue = priorityOrder[(a.priority || 'normal').toLowerCase()] || 0;
                     bValue = priorityOrder[(b.priority || 'normal').toLowerCase()] || 0;
                     return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
@@ -184,6 +261,41 @@ const AllIssues = () => {
                filters.priority !== 'all';
     };
 
+    // Count statuses (excluding rejected)
+    const getStatusCounts = () => {
+        const counts = {
+            pending: 0,
+            inProgress: 0,
+            resolved: 0,
+            rejected: 0,
+            all: filteredOutRejected.length
+        };
+
+        filteredOutRejected.forEach(issue => {
+            const status = issue.status ? issue.status.toLowerCase() : '';
+            
+            if (status.includes('pending')) {
+                counts.pending++;
+            } else if (status.includes('progress')) {
+                counts.inProgress++;
+            } else if (status.includes('resolved')) {
+                counts.resolved++;
+            }
+        });
+
+        // Count rejected from all issues (not filtered out)
+        allIssues.forEach(issue => {
+            const status = issue.status ? issue.status.toLowerCase() : '';
+            if (status.includes('rejected')) {
+                counts.rejected++;
+            }
+        });
+
+        return counts;
+    };
+
+    const statusCounts = getStatusCounts();
+
     if (loading) {
         return (
             <div className="min-h-screen bg-white py-12">
@@ -205,12 +317,20 @@ const AllIssues = () => {
                     <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
                         <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Issues</h2>
                         <p className="text-red-600 mb-4">{error}</p>
-                        <button 
-                            onClick={() => window.location.reload()} 
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                        >
-                            Try Again
-                        </button>
+                        <div className="flex gap-2 justify-center">
+                            <button 
+                                onClick={fetchIssues} 
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                Try Again
+                            </button>
+                            <button 
+                                onClick={() => window.location.reload()} 
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                                Reload Page
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -222,9 +342,23 @@ const AllIssues = () => {
             <div className="container mx-auto px-4">
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                        All Reported Issues
-                    </h1>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            All Reported Issues
+                        </h1>
+                        <button
+                            onClick={refreshData}
+                            disabled={refreshing}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                            {refreshing ? (
+                                <FaSync className="animate-spin" />
+                            ) : (
+                                <FaSync />
+                            )}
+                            {refreshing ? 'Refreshing...' : 'Refresh'}
+                        </button>
+                    </div>
                     <p className="text-gray-600 mb-6">
                         Browse and search through all infrastructure issues reported by citizens
                     </p>
@@ -427,7 +561,10 @@ const AllIssues = () => {
                     <div className="text-gray-700 mb-4 md:mb-0">
                         <p className="font-medium">
                             Showing <span className="text-blue-600 font-bold">{filteredIssues.length}</span> of{" "}
-                            <span className="font-bold">{allIssues.length}</span> total issues
+                            <span className="font-bold">{statusCounts.all}</span> total issues
+                            <span className="text-gray-500 text-sm ml-2">
+                                ({statusCounts.rejected} rejected issues hidden)
+                            </span>
                         </p>
                         {searchTerm && (
                             <p className="text-gray-500 text-sm mt-1">
@@ -439,21 +576,27 @@ const AllIssues = () => {
                                 Filtered issues • Sort: {sortOptions.find(o => o.value === sortBy)?.label} ({sortOrder})
                             </p>
                         )}
+                        <p className="text-gray-500 text-sm mt-1">
+                            Data last updated: {new Date().toLocaleTimeString()}
+                        </p>
                     </div>
                     
                     {/* Status Filter Badges */}
                     <div className="flex flex-wrap gap-2">
                         <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                            All: {allIssues.length}
+                            All: {statusCounts.all}
                         </span>
                         <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-                            Pending: {allIssues.filter(i => i.status === 'pending' || i.status === 'Pending').length}
+                            Pending: {statusCounts.pending}
                         </span>
                         <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                            In Progress: {allIssues.filter(i => i.status === 'in progress' || i.status === 'In-Progress').length}
+                            In Progress: {statusCounts.inProgress}
                         </span>
                         <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                            Resolved: {allIssues.filter(i => i.status === 'resolved' || i.status === 'Resolved').length}
+                            Resolved: {statusCounts.resolved}
+                        </span>
+                        <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
+                            Rejected: {statusCounts.rejected}
                         </span>
                     </div>
                 </div>
@@ -473,30 +616,30 @@ const AllIssues = () => {
                             <FaSearch />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                            {allIssues.length === 0 ? "No Issues Reported Yet" : "No Matching Issues Found"}
+                            {statusCounts.all === 0 ? "No Issues Reported Yet" : "No Matching Issues Found"}
                         </h3>
                         <p className="text-gray-500 max-w-md mx-auto mb-6">
-                            {allIssues.length === 0 
+                            {statusCounts.all === 0 
                                 ? "Be the first to report an infrastructure issue in your community!"
                                 : `No issues match your filters. Try adjusting your search or filters.`
                             }
                         </p>
-                        {hasActiveFilters() && (
+                        <div className="flex gap-2 justify-center">
+                            {hasActiveFilters() && (
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Clear All Filters
+                                </button>
+                            )}
                             <button
-                                onClick={clearAllFilters}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                onClick={refreshData}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                             >
-                                Clear All Filters
+                                Refresh Data
                             </button>
-                        )}
-                        {allIssues.length === 0 && (
-                            <button
-                                onClick={() => window.location.href = '/dashboard/submit-issue'}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Report First Issue
-                            </button>
-                        )}
+                        </div>
                     </div>
                 )}
             </div>

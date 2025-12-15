@@ -26,8 +26,20 @@ import {
   FaInfoCircle,
   FaSave,
   FaTimes,
-  FaSpinner
+  FaSpinner,
+  FaRocket,
+  FaBolt,
+  FaCrown,
+  FaFire,
+  FaCreditCard,
+  FaLock,
+  FaCcVisa,
+  FaCcMastercard,
+  FaCcAmex,
+  FaCcDiscover,
+  FaGem
 } from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast";
 
 const IssueDetails = () => {
   const initialData = useLoaderData();
@@ -45,7 +57,8 @@ const IssueDetails = () => {
           email: user.email,
           role: user.role || "user",
           displayName: user.displayName,
-          id: user.id || user.email
+          id: user.id || user.email,
+          isPremium: user.isPremium || false
         };
       }
       
@@ -60,7 +73,8 @@ const IssueDetails = () => {
         email: userId.includes('@') ? userId : `${userId}@demo.com`,
         role: "user",
         displayName: "Demo User",
-        id: userId
+        id: userId,
+        isPremium: false
       };
     } catch (error) {
       console.error("Error getting user:", error);
@@ -71,6 +85,8 @@ const IssueDetails = () => {
   const currentUser = getCurrentUser();
   const currentUserId = currentUser?.id || '';
   const currentUserRole = currentUser?.role || 'user';
+  const currentUserEmail = currentUser?.email || '';
+  const isUserPremium = currentUser?.isPremium || false;
   
   const [issue, setIssue] = useState(initialData?.data || initialData);
   const [upvotes, setUpvotes] = useState(issue?.upvotes || 0);
@@ -94,6 +110,17 @@ const IssueDetails = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Boost states
+  const [showBoostModal, setShowBoostModal] = useState(false);
+  const [boostProcessing, setBoostProcessing] = useState(false);
+  const [boostPaymentMethod, setBoostPaymentMethod] = useState('card');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState(currentUser?.displayName || '');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [saveCard, setSaveCard] = useState(false);
+  const [boostAmount, setBoostAmount] = useState(100); // ₹100 for boost
 
   // Initialize
   useEffect(() => {
@@ -188,15 +215,19 @@ const IssueDetails = () => {
               ? [...(prev.upvotedBy || []), currentUserId]
               : (prev.upvotedBy || []).filter(id => id !== currentUserId)
           }));
+          
+          toast.success(data.hasUpvoted ? "Issue upvoted!" : "Upvote removed");
         } else {
           setCanUpvote(false);
           setUpvoteMessage(data.message || "Cannot upvote this issue");
+          toast.error(data.message || "Cannot upvote this issue");
         }
       } else {
-        console.error("Upvote failed:", data.message);
+        toast.error(data.message || "Upvote failed");
       }
     } catch (error) {
       console.error("Error upvoting:", error);
+      toast.error("Error upvoting. Please try again.");
     } finally {
       setIsUpvoting(false);
     }
@@ -229,7 +260,7 @@ const IssueDetails = () => {
 
   const saveEdit = async () => {
     if (!editForm.title || !editForm.description || !editForm.category || !editForm.location) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -242,8 +273,6 @@ const IssueDetails = () => {
         updateType: "user_edit"
       };
 
-      console.log("Sending updates:", updates);
-
       const response = await fetch(`http://localhost:3000/issues/${id}`, {
         method: "PATCH",
         headers: {
@@ -253,7 +282,6 @@ const IssueDetails = () => {
       });
 
       const data = await response.json();
-      console.log("Update response:", data);
       
       if (data.success) {
         if (data.data) {
@@ -269,16 +297,16 @@ const IssueDetails = () => {
         
         setIsEditing(false);
         setEditForm({});
-        alert("Issue updated successfully!");
+        toast.success("Issue updated successfully!");
         
         // Re-check permissions
         checkPermissions();
       } else {
-        alert(data.message || "Failed to update issue");
+        toast.error(data.message || "Failed to update issue");
       }
     } catch (error) {
       console.error("Error updating issue:", error);
-      alert("Error updating issue. Please try again.");
+      toast.error("Error updating issue. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -307,18 +335,181 @@ const IssueDetails = () => {
       const data = await response.json();
       
       if (data.success) {
-        alert("Issue deleted successfully!");
+        toast.success("Issue deleted successfully!");
         navigate("/issues");
       } else {
-        alert(data.message || "Failed to delete issue");
+        toast.error(data.message || "Failed to delete issue");
         setShowDeleteConfirm(false);
       }
     } catch (error) {
       console.error("Error deleting issue:", error);
-      alert("Error deleting issue. Please try again.");
+      toast.error("Error deleting issue. Please try again.");
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Boost functions
+  const openBoostModal = () => {
+    if (!currentUserEmail) {
+      toast.error("Please login to boost issues");
+      return;
+    }
+    setShowBoostModal(true);
+  };
+
+  const closeBoostModal = () => {
+    setShowBoostModal(false);
+    setCardNumber('');
+    setExpiryDate('');
+    setCvc('');
+    setBoostProcessing(false);
+  };
+
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || '';
+    const parts = [];
+
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
+    }
+  };
+
+  const formatExpiryDate = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length >= 2) {
+      return v.substring(0, 2) + '/' + v.substring(2, 4);
+    }
+    return v;
+  };
+
+  const handleCardNumberChange = (e) => {
+    const formatted = formatCardNumber(e.target.value);
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryDateChange = (e) => {
+    const formatted = formatExpiryDate(e.target.value);
+    setExpiryDate(formatted);
+  };
+
+  const handleCvcChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 3);
+    setCvc(value);
+  };
+
+  const processBoostPayment = async () => {
+    if (!cardNumber || !cardName || !expiryDate || !cvc) {
+      toast.error("Please fill in all card details");
+      return;
+    }
+
+    if (cardNumber.replace(/\s/g, '').length !== 16) {
+      toast.error("Please enter a valid 16-digit card number");
+      return;
+    }
+
+    if (expiryDate.length !== 5) {
+      toast.error("Please enter a valid expiry date (MM/YY)");
+      return;
+    }
+
+    if (cvc.length !== 3) {
+      toast.error("Please enter a valid 3-digit CVC");
+      return;
+    }
+
+    setBoostProcessing(true);
+
+    try {
+      // Create boost payment record
+      const boostPaymentData = {
+        issueId: id,
+        issueTitle: issue.title,
+        userEmail: currentUserEmail,
+        userName: currentUser?.displayName || currentUserEmail.split('@')[0],
+        userId: currentUserId,
+        amount: boostAmount,
+        currency: "INR",
+        paymentMethod: boostPaymentMethod === 'card' ? 'Card' : 'UPI',
+        cardLastFour: cardNumber.slice(-4),
+        status: "completed",
+        boostType: "priority_boost",
+        oldPriority: issue.priority || "normal",
+        newPriority: "high",
+        paymentDate: new Date().toISOString()
+      };
+
+      // Save boost payment to MongoDB
+      const boostResponse = await fetch('http://localhost:3000/boost-payment', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(boostPaymentData),
+      });
+
+      const boostData = await boostResponse.json();
+
+      if (boostData.success) {
+        // Update issue priority to high
+        const updateResponse = await fetch(`http://localhost:3000/issues/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            priority: "high",
+            userId: currentUserId,
+            updateType: "priority_boost"
+          }),
+        });
+
+        const updateData = await updateResponse.json();
+
+        if (updateData.success) {
+          // Update local issue state
+          setIssue(prev => ({
+            ...prev,
+            priority: "high",
+            updatedAt: new Date().toISOString()
+          }));
+
+          // Show success toast
+          toast.success(
+            <div>
+              <div className="font-bold">🎉 Boost Successful!</div>
+              <div>Issue priority upgraded from <span className="font-semibold">Normal</span> to <span className="font-semibold text-red-600">High</span></div>
+              <div className="text-sm text-gray-600 mt-1">Transaction ID: {boostData.transactionId}</div>
+            </div>,
+            {
+              duration: 5000,
+              icon: '🚀'
+            }
+          );
+
+          // Close modal
+          closeBoostModal();
+        } else {
+          toast.error("Failed to update issue priority");
+        }
+      } else {
+        toast.error("Boost payment failed: " + (boostData.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Boost payment error:", error);
+      toast.error("Boost payment failed. Please try again.");
+    } finally {
+      setBoostProcessing(false);
     }
   };
 
@@ -418,11 +609,14 @@ const IssueDetails = () => {
   const getPriorityBadge = () => {
     const priorityText = priority || 'Normal';
     
-    if (priorityText.toLowerCase() === "high" || priorityText.toLowerCase() === "critical") {
+    if (priorityText.toLowerCase() === "high") {
       return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-          <FaExclamationTriangle className="mr-1" /> High Priority
-        </span>
+        <div className="flex items-center gap-1">
+          <FaFire className="text-red-500" />
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+            <FaExclamationTriangle className="mr-1" /> High Priority
+          </span>
+        </div>
       );
     }
     return (
@@ -494,11 +688,42 @@ const IssueDetails = () => {
     "Public Furniture"
   ];
 
+  // Check if user can boost this issue
+  const canBoost = currentUserEmail && 
+                  permissions.isReporter && 
+                  priority !== "high" && 
+                  status?.toLowerCase() !== "resolved";
+
   return (
     <div className="min-h-screen py-8">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      
       <div className="max-w-6xl mx-auto px-4">
         {/* Edit/Delete Actions Bar */}
-        {!loadingPermissions && (permissions.canEdit || permissions.canDelete) && (
+        {!loadingPermissions && (permissions.canEdit || permissions.canDelete || canBoost) && (
           <div className="mb-6 p-4 bg-white rounded-xl shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -506,12 +731,23 @@ const IssueDetails = () => {
                 <p className="text-sm text-gray-600">
                   {permissions.userRole === "admin" && "Administrator - Full access"}
                   {permissions.userRole === "staff" && "Staff - Can update status"}
-                  {permissions.userRole === "user" && permissions.isReporter && "Issue Owner - Can edit and delete"}
+                  {permissions.userRole === "user" && permissions.isReporter && "Issue Owner - Can edit, delete and boost"}
                   {permissions.userRole === "user" && !permissions.isReporter && "Regular User - Limited access"}
                 </p>
               </div>
               
               <div className="flex flex-wrap gap-2">
+                {/* Boost Button */}
+                {canBoost && (
+                  <button
+                    onClick={openBoostModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-colors"
+                  >
+                    <FaRocket />
+                    Boost Issue (₹100)
+                  </button>
+                )}
+                
                 {permissions.canEdit && !isEditing && (
                   <button
                     onClick={startEditing}
@@ -555,6 +791,11 @@ const IssueDetails = () => {
             <div className="absolute top-4 left-4 bg-white/90 p-3 rounded-lg">
               {getCategoryIcon()}
             </div>
+            
+            {/* Priority Badge on Image */}
+            <div className="absolute top-4 right-4">
+              {getPriorityBadge()}
+            </div>
           </div>
 
           {/* Content Section */}
@@ -585,12 +826,22 @@ const IssueDetails = () => {
                 </div>
               ) : (
                 <>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                    {title || "Untitled Issue"}
-                  </h1>
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                      {title || "Untitled Issue"}
+                    </h1>
+                    
+                    {/* Boost Info */}
+                    {priority === "high" && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full">
+                        <FaRocket className="w-4 h-4" />
+                        <span className="text-sm font-medium">Boosted</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {getStatusBadge()}
-                    {getPriorityBadge()}
+                    {!isEditing && getPriorityBadge()}
                   </div>
                 </>
               )}
@@ -868,6 +1119,229 @@ const IssueDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Boost Payment Modal */}
+      {showBoostModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Boost Issue Priority</h3>
+                <button
+                  onClick={closeBoostModal}
+                  className="text-gray-400 hover:text-gray-600"
+                  disabled={boostProcessing}
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Boost Details */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
+                    <FaRocket className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Priority Boost</h4>
+                    <p className="text-sm text-gray-600">Get faster attention for your issue</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Current Priority:</span>
+                    <span className="font-medium">Normal</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">New Priority:</span>
+                    <span className="font-bold text-red-600">High Priority</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-orange-200">
+                    <span className="text-gray-700">Boost Cost:</span>
+                    <span className="text-xl font-bold text-gray-900">₹{boostAmount}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-800 mb-3">Select Payment Method</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setBoostPaymentMethod('card')}
+                    className={`p-3 border rounded-lg flex flex-col items-center justify-center transition-all ${boostPaymentMethod === 'card' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                  >
+                    <FaCreditCard className="w-6 h-6 text-gray-600 mb-2" />
+                    <span className="text-sm font-medium">Credit/Debit Card</span>
+                  </button>
+                  <button
+                    onClick={() => setBoostPaymentMethod('upi')}
+                    className={`p-3 border rounded-lg flex flex-col items-center justify-center transition-all ${boostPaymentMethod === 'upi' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                  >
+                    <span className="text-2xl mb-2">📱</span>
+                    <span className="text-sm font-medium">UPI</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card Payment Form */}
+              {boostPaymentMethod === 'card' && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-800 mb-4">Card Details</h4>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Card Number
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={cardNumber}
+                          onChange={handleCardNumberChange}
+                          placeholder="1234 5678 9012 3456"
+                          maxLength={19}
+                          className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <div className="absolute left-3 top-3">
+                          <FaCreditCard className="w-5 h-5 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Name on Card
+                      </label>
+                      <input
+                        type="text"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          value={expiryDate}
+                          onChange={handleExpiryDateChange}
+                          placeholder="MM/YY"
+                          maxLength={5}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CVC
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={cvc}
+                            onChange={handleCvcChange}
+                            placeholder="123"
+                            maxLength={3}
+                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <div className="absolute right-3 top-3">
+                            <FaLock className="w-5 h-5 text-gray-400" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="saveCardBoost"
+                        checked={saveCard}
+                        onChange={(e) => setSaveCard(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="saveCardBoost" className="ml-2 text-sm text-gray-600">
+                        Save this card for future payments
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* UPI Payment */}
+              {boostPaymentMethod === 'upi' && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-gray-600 mb-4">Scan UPI QR code or enter UPI ID</p>
+                  <div className="p-4 bg-white border border-gray-300 rounded-lg inline-block">
+                    {/* Mock QR Code */}
+                    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded">
+                      <div className="text-center">
+                        <div className="text-4xl mb-2">📱</div>
+                        <p className="text-sm text-gray-600">UPI QR Code</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-4">Amount: ₹{boostAmount}</p>
+                </div>
+              )}
+
+              {/* Security Note */}
+              <div className="mb-6 p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-start">
+                  <FaLock className="w-4 h-4 text-blue-500 mt-1 mr-2" />
+                  <p className="text-sm text-blue-700">
+                    Your payment is secure and encrypted. We never store your full card details.
+                  </p>
+                </div>
+              </div>
+
+              {/* Benefits of Boost */}
+              <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">🚀 Benefits of Boosting:</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• Issue gets marked as High Priority</li>
+                  <li>• 3x faster response time</li>
+                  <li>• Priority assignment to staff</li>
+                  <li>• Increased visibility on platform</li>
+                </ul>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={processBoostPayment}
+                  disabled={boostProcessing}
+                  className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold flex items-center justify-center gap-2"
+                >
+                  {boostProcessing ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      Processing Boost...
+                    </>
+                  ) : (
+                    <>
+                      <FaRocket />
+                      Boost Issue for ₹{boostAmount}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={closeBoostModal}
+                  disabled={boostProcessing}
+                  className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

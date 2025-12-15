@@ -238,30 +238,7 @@ const StaffDashboard = () => {
           </div>
         </div>
         
-        {/* Pending Issues Card */}
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Pending Issues</h3>
-            <FaClock className="w-8 h-8 text-yellow-500" />
-          </div>
-          <div className="text-center">
-            <p className="text-3xl md:text-4xl font-bold text-yellow-600 mb-1">{stats.pendingIssues}</p>
-            <p className="text-sm text-gray-500">Awaiting your action</p>
-          </div>
-          {stats.assignedIssues > 0 && (
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <div className="text-xs text-gray-500 mb-1">
-                {Math.round((stats.pendingIssues / stats.assignedIssues) * 100)}% of assigned
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-yellow-500"
-                  style={{ width: `${(stats.pendingIssues / stats.assignedIssues) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
-        </div>
+       
         
         {/* Resolved Issues Card */}
         <div className="bg-white rounded-xl shadow border border-gray-200 p-5">
@@ -288,23 +265,7 @@ const StaffDashboard = () => {
           )}
         </div>
         
-        {/* Today's Tasks Card */}
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Today's Tasks</h3>
-            <FaCalendarDay className="w-8 h-8 text-purple-500" />
-          </div>
-          <div className="text-center">
-            <p className="text-3xl md:text-4xl font-bold text-purple-600 mb-1">{stats.todaysTasks}</p>
-            <p className="text-sm text-gray-500">Issues due/created today</p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Weekly Resolved: {stats.weeklyResolved}</span>
-              <span>Avg Time: {stats.averageResolutionTime}d</span>
-            </div>
-          </div>
-        </div>
+       
       </div>
 
       {/* Main Content Area - Two Columns */}

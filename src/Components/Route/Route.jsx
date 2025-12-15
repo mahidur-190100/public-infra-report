@@ -25,6 +25,8 @@ import StaffDashboard from "../Dashboard/StaffDashboard";
 import ResolvedIssues from "../ResolvedIssues/ResolvedIssues";
 import PendingIssues from "../PendingIssues/PendingIssues";
 import AssignedIssue from "../AssignedIssue/AssignedIssue";
+import RejectIssue from "../../RejectIssue/RejectIssue";
+import ManageCitizens from "../ManageCitizens/ManageCitizens";
 
 
 export const router = createBrowserRouter([
@@ -137,6 +139,14 @@ export const router = createBrowserRouter([
         path: 'payments',
         element: <ViewPayment />
       },
+      {
+        path: "reject-issues",
+        element: <RejectIssue></RejectIssue>
+      },
+      {
+        path: 'manage-citizens',
+        element: <ManageCitizens></ManageCitizens>
+      }
     ]
   },
   // Staff routes with StaffLayout

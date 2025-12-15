@@ -1,9 +1,10 @@
-// Login.jsx - Complete updated version with staff support
+// Login.jsx - Updated version with proper block handling
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../../Hooks/useAuth';
 import axios from 'axios';
+import { toast, Toaster } from 'react-hot-toast'; // Add toast
 
 const Login = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
@@ -28,11 +29,30 @@ const Login = () => {
                             const userData = response.data.user;
                             console.log("✅ User data from MongoDB:", userData);
                             
-                            // ✅ CHECK IF USER IS BLOCKED
+                            // ✅ CHECK IF USER IS BLOCKED - IMPROVED
                             if (userData.blocked === true) {
                                 console.log('🚫 USER IS BLOCKED:', userData.email);
                                 
-                                // Sign out from Firebase
+                                // Show toast notification
+                                toast.error(
+                                    <div>
+                                        <div className="font-bold">🚫 Account Blocked</div>
+                                        <div className="text-sm">Your account has been blocked by administrator.</div>
+                                        {userData.blockReason && (
+                                            <div className="text-xs mt-1">Reason: {userData.blockReason}</div>
+                                        )}
+                                    </div>,
+                                    {
+                                        duration: 5000,
+                                        style: {
+                                            background: '#FEE2E2',
+                                            color: '#DC2626',
+                                            border: '1px solid #FCA5A5'
+                                        }
+                                    }
+                                );
+                                
+                                // Sign out from Firebase immediately
                                 signOutUser()
                                     .then(() => {
                                         console.log('✅ Signed out blocked user from Firebase');
@@ -42,10 +62,11 @@ const Login = () => {
                                         localStorage.removeItem('admin');
                                         localStorage.removeItem('staff');
                                         
-                                        alert('🚫 Your account has been blocked. Please contact the administrator.');
+                                        // Don't navigate anywhere, stay on login page
                                     })
                                     .catch(signOutError => {
                                         console.error('❌ Error signing out:', signOutError);
+                                        toast.error('Failed to sign out. Please refresh the page.');
                                     });
                                 
                                 return; // Stop further execution
@@ -66,6 +87,8 @@ const Login = () => {
                                 name: userData.name || userData.displayName,
                                 id: userData._id || userData.email,
                                 createdAt: userData.createdAt,
+                                isPremium: userData.isPremium || false,
+                                blocked: userData.blocked || false,
                                 lastLogin: new Date().toISOString()
                             };
                             
@@ -81,6 +104,9 @@ const Login = () => {
                                     userSessionData.isAdmin = true;
                                     localStorage.setItem('admin', JSON.stringify(userSessionData));
                                     console.log('✅ Admin saved to localStorage');
+                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
+                                        icon: '👑'
+                                    });
                                     navigate('/dashboard/admin');
                                     break;
                                     
@@ -89,6 +115,9 @@ const Login = () => {
                                     userSessionData.isStaff = true;
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
                                     console.log('✅ Staff saved to localStorage');
+                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
+                                        icon: '👨‍💼'
+                                    });
                                     navigate('/dashboard/staff');
                                     break;
                                     
@@ -97,6 +126,9 @@ const Login = () => {
                                     console.log('👤 REGULAR USER DETECTED:', userData.email);
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
                                     console.log('✅ User saved to localStorage');
+                                    toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                        icon: '👋'
+                                    });
                                     navigate('/dashboard');
                                     break;
                             }
@@ -114,6 +146,7 @@ const Login = () => {
                             uid: result.user.uid,
                             role: 'user', // Default role
                             blocked: false, // Default not blocked
+                            isPremium: false,
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
                         };
@@ -136,6 +169,10 @@ const Login = () => {
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
                                 console.log('✅ New regular user created and saved to localStorage');
                                 
+                                toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                    icon: '🎉'
+                                });
+                                
                                 // Navigate to regular user dashboard
                                 navigate('/dashboard');
                             })
@@ -151,16 +188,35 @@ const Login = () => {
                                     lastLogin: new Date().toISOString()
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
+                                
+                                toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                    icon: '👋'
+                                });
+                                
                                 navigate('/dashboard');
                             });
                     });
             })
             .catch(error => {
                 console.log("❌ Firebase login error:", error.message);
-                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-                    alert('Invalid email or password');
+                
+                // Show appropriate error messages
+                if (error.code === 'auth/wrong-password') {
+                    toast.error('Invalid password. Please try again.', {
+                        icon: '🔒'
+                    });
+                } else if (error.code === 'auth/user-not-found') {
+                    toast.error('No account found with this email.', {
+                        icon: '📧'
+                    });
+                } else if (error.code === 'auth/too-many-requests') {
+                    toast.error('Too many failed attempts. Try again later.', {
+                        icon: '⏱️'
+                    });
                 } else {
-                    alert('Login failed: ' + error.message);
+                    toast.error('Login failed: ' + error.message, {
+                        icon: '❌'
+                    });
                 }
             });
         
@@ -182,6 +238,25 @@ const Login = () => {
                             if (userData.blocked === true) {
                                 console.log('🚫 USER IS BLOCKED:', userData.email);
                                 
+                                // Show toast notification
+                                toast.error(
+                                    <div>
+                                        <div className="font-bold">🚫 Account Blocked</div>
+                                        <div className="text-sm">Your account has been blocked by administrator.</div>
+                                        {userData.blockReason && (
+                                            <div className="text-xs mt-1">Reason: {userData.blockReason}</div>
+                                        )}
+                                    </div>,
+                                    {
+                                        duration: 5000,
+                                        style: {
+                                            background: '#FEE2E2',
+                                            color: '#DC2626',
+                                            border: '1px solid #FCA5A5'
+                                        }
+                                    }
+                                );
+                                
                                 // Sign out from Firebase
                                 signOutUser()
                                     .then(() => {
@@ -191,11 +266,10 @@ const Login = () => {
                                         localStorage.removeItem('user');
                                         localStorage.removeItem('admin');
                                         localStorage.removeItem('staff');
-                                        
-                                        alert('🚫 Your account has been blocked. Please contact the administrator.');
                                     })
                                     .catch(signOutError => {
                                         console.error('❌ Error signing out:', signOutError);
+                                        toast.error('Failed to sign out. Please refresh the page.');
                                     });
                                 
                                 return; // Stop further execution
@@ -215,6 +289,8 @@ const Login = () => {
                                 name: userData.name || userData.displayName,
                                 id: userData._id || userData.email,
                                 createdAt: userData.createdAt,
+                                isPremium: userData.isPremium || false,
+                                blocked: userData.blocked || false,
                                 lastLogin: new Date().toISOString()
                             };
                             
@@ -229,6 +305,9 @@ const Login = () => {
                                     console.log('🎯 ADMIN DETECTED (Google):', userData.email);
                                     userSessionData.isAdmin = true;
                                     localStorage.setItem('admin', JSON.stringify(userSessionData));
+                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
+                                        icon: '👑'
+                                    });
                                     navigate('/dashboard/admin');
                                     break;
                                     
@@ -236,6 +315,9 @@ const Login = () => {
                                     console.log('👔 STAFF DETECTED (Google):', userData.email);
                                     userSessionData.isStaff = true;
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
+                                        icon: '👨‍💼'
+                                    });
                                     navigate('/dashboard/staff');
                                     break;
                                     
@@ -243,6 +325,9 @@ const Login = () => {
                                 default:
                                     console.log('👤 REGULAR USER (Google):', userData.email);
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
+                                    toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                        icon: '👋'
+                                    });
                                     navigate('/dashboard');
                                     break;
                             }
@@ -258,6 +343,7 @@ const Login = () => {
                             role: 'user',
                             provider: 'google',
                             blocked: false,
+                            isPremium: false,
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
                         };
@@ -273,6 +359,11 @@ const Login = () => {
                                     lastLogin: new Date().toISOString()
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
+                                
+                                toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                    icon: '🎉'
+                                });
+                                
                                 navigate('/dashboard');
                             })
                             .catch(backendError => {
@@ -285,18 +376,50 @@ const Login = () => {
                                     lastLogin: new Date().toISOString()
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
+                                
+                                toast.success(`Welcome ${userSessionData.displayName}!`, {
+                                    icon: '👋'
+                                });
+                                
                                 navigate('/dashboard');
                             });
                     });
             })
             .catch(error => {
                 console.log("Google login error:", error.message);
-                alert('Google login failed: ' + error.message);
+                toast.error('Google login failed: ' + error.message, {
+                    icon: '❌'
+                });
             });
     }
 
     return (
         <div>
+            <Toaster 
+                position="top-right"
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#10B981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        duration: 5000,
+                        iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
+            
             <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="card bg-white shadow-2xl w-full max-w-md">
                     <div className="card-body p-8">

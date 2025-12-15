@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FaCamera, FaMapMarkerAlt, FaPaperPlane, FaTimes, FaExclamationCircle, FaImage, FaTrash, FaEye, FaUser, FaEnvelope } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaCamera, FaMapMarkerAlt, FaPaperPlane, FaTimes, FaExclamationCircle, FaImage, FaTrash, FaEye, FaUser, FaEnvelope, FaCrown, FaLock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -12,17 +12,32 @@ const SubmitIssue = () => {
   const [errors, setErrors] = useState({});
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
+  const [userIssuesCount, setUserIssuesCount] = useState(0);
+  const [checkingLimit, setCheckingLimit] = useState(true);
 
   // Get user from localStorage
   const getUserFromLocalStorage = () => {
     try {
       const userStr = localStorage.getItem('user');
+      const adminStr = localStorage.getItem('admin');
+      
       if (userStr) {
         const user = JSON.parse(userStr);
         return {
           displayName: user.displayName || user.name || 'User',
           email: user.email || 'user@example.com',
-          photoURL: user.photoURL || null
+          photoURL: user.photoURL || null,
+          isPremium: user.isPremium || false,
+          role: user.role || 'user'
+        };
+      } else if (adminStr) {
+        const admin = JSON.parse(adminStr);
+        return {
+          displayName: admin.displayName || admin.name || 'Admin',
+          email: admin.email || 'admin@example.com',
+          photoURL: admin.photoURL || null,
+          isPremium: true, // Admin is always premium
+          role: admin.role || 'admin'
         };
       }
       return null;
@@ -34,7 +49,31 @@ const SubmitIssue = () => {
 
   const user = getUserFromLocalStorage();
 
-  // Form state (removed reporterName since it comes from login)
+  // Fetch user's issue count on component mount
+  useEffect(() => {
+    if (user && !user.isPremium) {
+      fetchUserIssuesCount();
+    } else {
+      setCheckingLimit(false);
+    }
+  }, [user]);
+
+  const fetchUserIssuesCount = async () => {
+    try {
+      if (!user?.email) return;
+      
+      const response = await axios.get(`http://localhost:3000/my-issues?email=${user.email}`);
+      if (response.data.success) {
+        setUserIssuesCount(response.data.count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching user issues count:', error);
+    } finally {
+      setCheckingLimit(false);
+    }
+  };
+
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -57,6 +96,80 @@ const SubmitIssue = () => {
         [name]: ''
       }));
     }
+  };
+
+  // Check if user can submit issue
+  const canSubmitIssue = () => {
+    if (!user) {
+      return {
+        canSubmit: false,
+        message: 'You must be logged in to submit an issue',
+        reason: 'not_logged_in'
+      };
+    }
+    
+    if (user.isPremium) {
+      return {
+        canSubmit: true,
+        message: 'Premium user - Unlimited submissions',
+        reason: 'premium_user'
+      };
+    }
+    
+    // Non-premium users can submit only 2 issues
+    if (userIssuesCount >= 2) {
+      return {
+        canSubmit: false,
+        message: 'You have reached your limit of 2 free issues. Upgrade to premium for unlimited submissions.',
+        reason: 'limit_reached'
+      };
+    }
+    
+    return {
+      canSubmit: true,
+      message: `Free user - ${2 - userIssuesCount} issues remaining`,
+      reason: 'free_user'
+    };
+  };
+
+  // Show upgrade modal
+  const showUpgradeModal = () => {
+    Swal.fire({
+      title: '⚠️ Issue Limit Reached',
+      html: `
+        <div class="text-center">
+          <div class="mb-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full mb-3">
+              <i class="text-white text-2xl">👑</i>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Upgrade to Premium</h3>
+          <p class="text-gray-600 mb-4">
+            You've submitted ${userIssuesCount} free issues. To continue submitting issues, upgrade to our premium plan.
+          </p>
+          <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4 text-left">
+            <h4 class="font-semibold text-purple-800 mb-2">🎯 Premium Benefits:</h4>
+            <ul class="text-sm text-purple-700 space-y-1">
+              <li>• Unlimited issue submissions</li>
+              <li>• Priority issue resolution</li>
+              <li>• 24/7 dedicated support</li>
+              <li>• Advanced analytics dashboard</li>
+              <li>• 5 premium boosts per month</li>
+            </ul>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonColor: '#8B5CF6',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Upgrade to Premium',
+      cancelButtonText: 'Maybe Later',
+      showCloseButton: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/dashboard/premium');
+      }
+    });
   };
 
   // Handle image upload
@@ -213,11 +326,6 @@ const SubmitIssue = () => {
       newErrors.location = 'Location is required';
     }
     
-    // Check if user is logged in
-    if (!user) {
-      newErrors.user = 'You must be logged in to submit an issue';
-    }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -225,6 +333,29 @@ const SubmitIssue = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if user can submit
+    const { canSubmit, message, reason } = canSubmitIssue();
+    
+    if (!canSubmit) {
+      if (reason === 'not_logged_in') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Required',
+          text: message,
+          showCancelButton: true,
+          confirmButtonText: 'Go to Login',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login');
+          }
+        });
+      } else if (reason === 'limit_reached') {
+        showUpgradeModal();
+      }
+      return;
+    }
     
     if (!validateForm()) {
       Swal.fire({
@@ -255,15 +386,15 @@ const SubmitIssue = () => {
         Swal.close();
       }
 
-      // Step 2: Prepare data for MongoDB - Use logged-in user's info
+      // Step 2: Prepare data for MongoDB
       const issueData = {
         _id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: formData.title,
         description: formData.description,
         category: formData.category,
         location: formData.location,
-        reporterName: user?.displayName || 'User', // From login, not form
-        userEmail: user?.email || '', // From login
+        reporterName: user?.displayName || 'User',
+        userEmail: user?.email || '',
         priority: formData.priority,
         status: 'pending',
         upvotes: 0,
@@ -279,7 +410,7 @@ const SubmitIssue = () => {
         timeline: [{
           status: 'pending',
           message: 'Issue reported by citizen',
-          updatedBy: user?.displayName || 'User', // From login
+          updatedBy: user?.displayName || 'User',
           updatedAt: new Date().toISOString()
         }]
       };
@@ -294,6 +425,11 @@ const SubmitIssue = () => {
       });
       
       if (response.data.success) {
+        // Update issue count for non-premium users
+        if (!user?.isPremium) {
+          setUserIssuesCount(prev => prev + 1);
+        }
+        
         Swal.fire({
           icon: 'success',
           title: 'Issue Submitted!',
@@ -305,8 +441,8 @@ const SubmitIssue = () => {
                 <p><strong>Title:</strong> ${issueData.title}</p>
                 <p><strong>Category:</strong> ${issueData.category}</p>
                 <p><strong>Status:</strong> ${issueData.status}</p>
-                <p><strong>Reported By:</strong> ${user?.displayName} (from login)</p>
-                <p><strong>User Email:</strong> ${user?.email}</p>
+                <p><strong>Reported By:</strong> ${user?.displayName}</p>
+                <p><strong>Remaining Issues:</strong> ${user?.isPremium ? 'Unlimited (Premium)' : `${2 - userIssuesCount - 1}`}</p>
               </div>
             </div>
           `,
@@ -374,6 +510,116 @@ const SubmitIssue = () => {
     });
   };
 
+  // Render limit info
+  const renderLimitInfo = () => {
+    const { canSubmit, message, reason } = canSubmitIssue();
+    
+    if (checkingLimit) {
+      return (
+        <div className="bg-gray-100 border border-gray-300 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <p className="text-gray-600">Checking your submission limit...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (reason === 'premium_user') {
+      return (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FaCrown className="w-5 h-5 text-purple-600" />
+              <div>
+                <p className="font-semibold text-purple-800">🎉 Premium User Benefits</p>
+                <p className="text-sm text-purple-700">Unlimited issue submissions • Priority support • Advanced features</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-full">
+              PREMIUM
+            </span>
+          </div>
+        </div>
+      );
+    }
+    
+    if (reason === 'free_user') {
+      return (
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FaLock className="w-5 h-5 text-blue-600" />
+              <div>
+                <p className="font-semibold text-blue-800">📊 Free Account Limits</p>
+                <p className="text-sm text-blue-700">
+                  {userIssuesCount} of 2 issues submitted • {2 - userIssuesCount} issues remaining
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-gradient-to-r from-blue-600 to-green-600 text-white text-sm font-medium rounded-full">
+              FREE TIER
+            </span>
+          </div>
+        </div>
+      );
+    }
+    
+    if (reason === 'limit_reached') {
+      return (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FaExclamationCircle className="w-5 h-5 text-red-600" />
+              <div>
+                <p className="font-semibold text-red-800">⚠️ Submission Limit Reached</p>
+                <p className="text-sm text-red-700">You've submitted {userIssuesCount} free issues</p>
+              </div>
+            </div>
+            <button
+              onClick={showUpgradeModal}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium text-sm"
+            >
+              Upgrade to Premium
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (reason === 'not_logged_in') {
+      return (
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FaLock className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-semibold text-yellow-800">🔒 Login Required</p>
+                <p className="text-sm text-yellow-700">Please login to submit issues</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-colors font-medium text-sm"
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Check if form is disabled
+  const isFormDisabled = () => {
+    const { canSubmit, reason } = canSubmitIssue();
+    return !canSubmit || checkingLimit || loading || uploadingImages;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <Toaster 
@@ -395,7 +641,6 @@ const SubmitIssue = () => {
           </p>
         </div>
 
-
         {/* Data Storage Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
@@ -408,6 +653,9 @@ const SubmitIssue = () => {
             </div>
           </div>
         </div>
+
+        {/* Limit Info */}
+        {renderLimitInfo()}
       </div>
 
       {/* Main Form */}
@@ -421,7 +669,12 @@ const SubmitIssue = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Report New Issue</h2>
-                <p className="text-blue-100">Logged in as: {user?.displayName || 'Not logged in'}</p>
+                <p className="text-blue-100">
+                  {user 
+                    ? `Logged in as: ${user.displayName} (${user.isPremium ? 'Premium User' : 'Free User'})`
+                    : 'Not logged in'
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -441,6 +694,11 @@ const SubmitIssue = () => {
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-lg border border-gray-300">
                     <FaUser className="text-gray-500" />
                     <span className="text-gray-700 font-medium">{user?.displayName || 'Not logged in'}</span>
+                    {user?.isPremium && (
+                      <span className="ml-auto px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs rounded-full flex items-center gap-1">
+                        <FaCrown className="w-3 h-3" /> PREMIUM
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     This is automatically filled from your account
@@ -460,11 +718,6 @@ const SubmitIssue = () => {
                   </p>
                 </div>
               </div>
-              {errors.user && (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.user}
-                </p>
-              )}
             </div>
 
             {/* Issue Details */}
@@ -483,8 +736,9 @@ const SubmitIssue = () => {
                   onChange={handleChange}
                   className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                     errors.title ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  } ${isFormDisabled() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="e.g., Large pothole on Main Street"
+                  disabled={isFormDisabled()}
                 />
                 {errors.title && (
                   <p className="mt-2 text-sm text-red-600">
@@ -505,8 +759,9 @@ const SubmitIssue = () => {
                   rows="4"
                   className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                     errors.description ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  } ${isFormDisabled() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="Describe the issue in detail. Include size, location specifics, dangers, and when you noticed it..."
+                  disabled={isFormDisabled()}
                 />
                 <div className="flex justify-between mt-2">
                   {errors.description && (
@@ -535,7 +790,8 @@ const SubmitIssue = () => {
                     onChange={handleChange}
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.category ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    }`}
+                    } ${isFormDisabled() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    disabled={isFormDisabled()}
                   >
                     <option value="">Select a category</option>
                     <option value="Road Damage">Road Damage</option>
@@ -569,8 +825,9 @@ const SubmitIssue = () => {
                       onChange={handleChange}
                       className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                         errors.location ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                      }`}
+                      } ${isFormDisabled() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                       placeholder="e.g., Main Street, Dhaka"
+                      disabled={isFormDisabled()}
                     />
                   </div>
                   {errors.location && (
@@ -595,6 +852,7 @@ const SubmitIssue = () => {
                       checked={formData.priority === 'normal'}
                       onChange={handleChange}
                       className="mr-2"
+                      disabled={isFormDisabled()}
                     />
                     <span className="text-gray-700">Normal</span>
                   </label>
@@ -606,6 +864,7 @@ const SubmitIssue = () => {
                       checked={formData.priority === 'high'}
                       onChange={handleChange}
                       className="mr-2"
+                      disabled={isFormDisabled()}
                     />
                     <span className="text-gray-700">High (Urgent)</span>
                   </label>
@@ -638,22 +897,22 @@ const SubmitIssue = () => {
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
-                  disabled={imagePreviews.length >= 5 || uploadingImages || !user}
+                  disabled={imagePreviews.length >= 5 || uploadingImages || isFormDisabled()}
                 />
                 <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
                   imagePreviews.length >= 5 
                     ? 'border-gray-300 bg-gray-50 cursor-not-allowed' 
                     : uploadingImages
                     ? 'border-yellow-300 bg-yellow-50 cursor-not-allowed'
-                    : !user
+                    : isFormDisabled()
                     ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
                     : 'border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 cursor-pointer'
                 }`}>
                   <div className="flex flex-col items-center">
                     <FaImage className="w-12 h-12 text-blue-500 mb-3" />
                     <p className="text-gray-700 font-medium mb-1">
-                      {!user 
-                        ? 'Please log in to upload images'
+                      {isFormDisabled() 
+                        ? 'Submission not available'
                         : imagePreviews.length >= 5 
                         ? 'Maximum images reached'
                         : uploadingImages
@@ -679,7 +938,7 @@ const SubmitIssue = () => {
                       type="button"
                       onClick={clearAllImages}
                       className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={uploadingImages || !user}
+                      disabled={uploadingImages || isFormDisabled()}
                     >
                       <FaTrash className="w-3 h-3" /> Clear All
                     </button>
@@ -704,7 +963,7 @@ const SubmitIssue = () => {
                               onClick={() => previewImage(index)}
                               className="bg-white text-gray-800 p-2 rounded-full hover:bg-gray-100 transition-colors"
                               title="Preview"
-                              disabled={uploadingImages}
+                              disabled={uploadingImages || isFormDisabled()}
                             >
                               <FaEye className="w-4 h-4" />
                             </button>
@@ -713,7 +972,7 @@ const SubmitIssue = () => {
                               onClick={() => removeImage(index)}
                               className="bg-white text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
                               title="Remove"
-                              disabled={uploadingImages}
+                              disabled={uploadingImages || isFormDisabled()}
                             >
                               <FaTimes className="w-4 h-4" />
                             </button>
@@ -740,7 +999,7 @@ const SubmitIssue = () => {
                 type="button"
                 onClick={clearForm}
                 className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-                disabled={loading || uploadingImages || !user}
+                disabled={loading || uploadingImages || isFormDisabled()}
               >
                 Clear Form
               </button>
@@ -749,10 +1008,10 @@ const SubmitIssue = () => {
               
               <button
                 type="submit"
-                disabled={loading || uploadingImages || !user}
+                disabled={isFormDisabled()}
                 className={`px-8 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                  loading || uploadingImages || !user
-                    ? 'bg-blue-400 cursor-not-allowed'
+                  isFormDisabled()
+                    ? 'bg-gray-400 cursor-not-allowed text-white'
                     : 'bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white shadow-lg hover:shadow-xl'
                 }`}
               >
@@ -761,17 +1020,47 @@ const SubmitIssue = () => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     {uploadingImages ? 'Uploading Images...' : 'Saving to MongoDB...'}
                   </>
-                ) : !user ? (
-                  'Please Log In to Submit'
+                ) : checkingLimit ? (
+                  'Checking Limit...'
+                ) : !canSubmitIssue().canSubmit ? (
+                  canSubmitIssue().reason === 'limit_reached' ? 'Upgrade Required' : 'Cannot Submit'
                 ) : (
                   <>
-                    <FaPaperPlane /> Submit Issue as {user.displayName}
+                    <FaPaperPlane /> Submit Issue
                   </>
                 )}
               </button>
             </div>
           </div>
         </form>
+
+        {/* Upgrade Banner for non-premium users */}
+        {user && !user.isPremium && userIssuesCount >= 1 && (
+          <div className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-white bg-opacity-20 p-3 rounded-xl">
+                  <FaCrown className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-1">🚀 Ready for Unlimited Submissions?</h3>
+                  <p className="text-purple-100">
+                    {userIssuesCount === 2 
+                      ? "You've used all your free submissions! Upgrade now for unlimited issues."
+                      : `Only ${2 - userIssuesCount} free issues left. Upgrade for unlimited submissions.`
+                    }
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/premium')}
+                className="px-6 py-3 bg-white text-purple-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                Upgrade to Premium
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

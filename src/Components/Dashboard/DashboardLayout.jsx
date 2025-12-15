@@ -109,21 +109,13 @@ const DashboardLayout = () => {
       path: '/dashboard/my-issues',
       icon: <FaEdit className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-    {
-      title: 'Boost Priority',
-      path: '/dashboard/boost-priority',
-      icon: <FaStar className="w-4 h-4 sm:w-5 sm:h-5" />
-    },
+   
     {
       title: 'Premium Subscription',
       path: '/dashboard/premium',
       icon: <FaCrown className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-    {
-      title: 'Track Activities',
-      path: '/dashboard/activities',
-      icon: <FaHistory className="w-4 h-4 sm:w-5 sm:h-5" />
-    }
+   
   ];
 
   // Admin Menu Items
