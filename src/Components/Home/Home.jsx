@@ -5,6 +5,7 @@ import Banner from '../Banner/Banner';
 import HowItWorksSimple from '../Banner/HowItWorksSimple';
 import ReportGuide from './ReportGuide';
 import SimpleDepartmentCards from './SimpleDepartmentCards';
+import ResolvedIssuesSection from '../ResolvedIssuesSection/ResolvedIssuesSection';
 
 const Home = () => {
   useEffect(() => {
@@ -35,6 +36,7 @@ const Home = () => {
           </p>
         </div>
       </section>
+
       {/* Hero Banner Section - Full Width */}
       <section
         className="w-full"
@@ -43,8 +45,6 @@ const Home = () => {
       >
         <Banner />
       </section>
-
-
 
       {/* How It Works Section */}
       <section
@@ -77,6 +77,15 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <SimpleDepartmentCards />
         </div>
+      </section>
+
+      {/* NEW: Recently Resolved Issues Section */}
+      <section
+        className="w-full"
+        data-aos="fade-up"
+        data-aos-delay="450"
+      >
+        <ResolvedIssuesSection />
       </section>
 
       {/* Final Call to Action */}
