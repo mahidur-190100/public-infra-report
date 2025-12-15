@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaThumbsUp,
   FaMapMarkerAlt,
@@ -17,7 +17,9 @@ import {
   FaTint,
   FaChair,
   FaTasks,
-  FaUserTie // Added for staff icon
+  FaUserTie,
+  FaBan,
+  FaInfoCircle
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 
@@ -36,32 +38,121 @@ const IssueCard = ({ issue }) => {
     progress,
     upvotes: initialUpvotes,
     upvotedBy: initialUpvotedBy = [],
+    userEmail: issueUserEmail
   } = issue;
 
-  // Get or create user ID (for demo purposes)
-  const getUserId = () => {
-    let userId = localStorage.getItem("userId");
-    if (!userId) {
-      userId = "user_" + Date.now() + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem("userId", userId);
+  // Get current user info
+  const getCurrentUser = () => {
+    try {
+      // First try to get user from localStorage (from your auth system)
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return {
+          email: user.email,
+          role: user.role || "user",
+          displayName: user.displayName,
+          id: user.id || user.email
+        };
+      }
+      
+      // Fallback to the old userId system for demo
+      let userId = localStorage.getItem("userId");
+      if (!userId) {
+        userId = "user_" + Date.now() + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem("userId", userId);
+      }
+      
+      return {
+        email: userId.includes('@') ? userId : `${userId}@demo.com`,
+        role: "user",
+        displayName: "Demo User",
+        id: userId
+      };
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return null;
     }
-    return userId;
   };
 
+  const currentUser = getCurrentUser();
+  const currentUserEmail = currentUser?.email || '';
+  const currentUserRole = currentUser?.role || 'user';
+  const currentUserId = currentUser?.id || currentUserEmail;
+
   const [upvotes, setUpvotes] = useState(initialUpvotes || 0);
-  const [hasUpvoted, setHasUpvoted] = useState(
-    initialUpvotedBy.includes(getUserId())
-  );
+  const [hasUpvoted, setHasUpvoted] = useState(false);
   const [isUpvoting, setIsUpvoting] = useState(false);
+  const [canUpvote, setCanUpvote] = useState(true);
+  const [upvoteMessage, setUpvoteMessage] = useState("");
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Check if user can upvote this issue
+  useEffect(() => {
+    const checkUpvotePermissions = async () => {
+      if (!currentUserEmail || !currentUserId) {
+        setCanUpvote(false);
+        setUpvoteMessage("Please login to upvote");
+        return;
+      }
+
+      // Initialize hasUpvoted from initial data
+      if (initialUpvotedBy && currentUserId) {
+        setHasUpvoted(initialUpvotedBy.includes(currentUserId));
+      }
+
+      // Quick client-side check first
+      const isAdminOrStaff = currentUserRole === 'admin' || currentUserRole === 'staff';
+      const isOwnIssue = issueUserEmail && currentUserEmail && 
+                         issueUserEmail.toLowerCase() === currentUserEmail.toLowerCase();
+
+      if (isAdminOrStaff) {
+        setCanUpvote(false);
+        setUpvoteMessage("Admin/Staff cannot upvote");
+        return;
+      }
+
+      if (isOwnIssue) {
+        setCanUpvote(false);
+        setUpvoteMessage("Cannot upvote your own issue");
+        return;
+      }
+
+      // Server-side check for final validation
+      try {
+        const response = await fetch(`http://localhost:3000/issues/${_id}/can-upvote`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            userId: currentUserId
+          }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          setCanUpvote(data.canUpvote);
+          setUpvoteMessage(data.message || "");
+          setHasUpvoted(data.hasUpvoted || false);
+        }
+      } catch (error) {
+        console.error("Error checking upvote permissions:", error);
+        // Keep client-side check results
+      }
+    };
+
+    checkUpvotePermissions();
+  }, [_id, currentUserEmail, currentUserRole, currentUserId, issueUserEmail, initialUpvotedBy]);
 
   const handleUpvote = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (isUpvoting) return;
+    if (isUpvoting || !canUpvote) return;
 
     setIsUpvoting(true);
-    const userId = getUserId();
 
     try {
       const response = await fetch(
@@ -71,20 +162,33 @@ const IssueCard = ({ issue }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ 
+            userId: currentUserId
+          }),
         }
       );
 
       const data = await response.json();
 
       if (data.success) {
-        setUpvotes(data.upvotes);
-        setHasUpvoted(data.hasUpvoted);
+        if (data.canUpvote) {
+          // Upvote was successful
+          setUpvotes(data.upvotes);
+          setHasUpvoted(data.hasUpvoted);
+        } else {
+          // Server says can't upvote (maybe permissions changed)
+          setCanUpvote(false);
+          setUpvoteMessage(data.message || "Cannot upvote this issue");
+        }
       } else {
+        // Server returned error
+        setCanUpvote(false);
+        setUpvoteMessage(data.message || "Upvote failed");
         console.error("Upvote failed:", data.message);
       }
     } catch (error) {
       console.error("Error upvoting:", error);
+      setUpvoteMessage("Network error. Please try again.");
     } finally {
       setIsUpvoting(false);
     }
@@ -94,10 +198,8 @@ const IssueCard = ({ issue }) => {
   const getAssignedStaffName = () => {
     if (!assignedTo) return null;
     
-    // If assignedTo is a string, return it
     if (typeof assignedTo === 'string') return assignedTo;
     
-    // If assignedTo is an object, extract name
     if (typeof assignedTo === 'object' && assignedTo !== null) {
       return assignedTo.name || assignedTo.displayName || assignedTo.department || 'Assigned Staff';
     }
@@ -255,7 +357,7 @@ const IssueCard = ({ issue }) => {
           </div>
         </div>
 
-        {/* Department Assigned - FIXED: Don't render object directly */}
+        {/* Department Assigned */}
         {assignedStaffName && (
           <div className="text-sm text-gray-700 mb-4 mt-auto">
             <div className="flex items-center gap-2">
@@ -275,32 +377,58 @@ const IssueCard = ({ issue }) => {
 
         {/* Action Buttons - Always at bottom */}
         <div className="card-actions flex items-center justify-between mt-auto pt-4">
-          {/* Upvote Button */}
-          <button
-            onClick={handleUpvote}
-            disabled={isUpvoting}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-              hasUpvoted
-                ? "bg-blue-100 border border-blue-300"
-                : "bg-gray-200 hover:bg-gray-300"
-            } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
-          >
-            <FaThumbsUp
-              className={`w-4 h-4 transition-colors ${
-                hasUpvoted ? "text-blue-600" : "text-gray-600"
-              }`}
-            />
-            <span
-              className={`font-bold ${
-                hasUpvoted ? "text-blue-700" : "text-gray-900"
-              }`}
+          {/* Upvote Button with restrictions */}
+          <div className="relative">
+            <button
+              onClick={handleUpvote}
+              disabled={isUpvoting || !canUpvote}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                hasUpvoted && canUpvote
+                  ? "bg-blue-100 border border-blue-300"
+                  : !canUpvote
+                  ? "bg-gray-100 border border-gray-300 cursor-not-allowed"
+                  : "bg-gray-200 hover:bg-gray-300"
+              } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
             >
-              {upvotes}
-            </span>
-            <span className="text-sm text-gray-600">
-              {hasUpvoted ? "Upvoted" : "Upvote"}
-            </span>
-          </button>
+              {!canUpvote ? (
+                <>
+                  <FaBan className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-500 font-bold">{upvotes}</span>
+                </>
+              ) : (
+                <>
+                  <FaThumbsUp
+                    className={`w-4 h-4 transition-colors ${
+                      hasUpvoted ? "text-blue-600" : "text-gray-600"
+                    }`}
+                  />
+                  <span
+                    className={`font-bold ${
+                      hasUpvoted ? "text-blue-700" : "text-gray-900"
+                    }`}
+                  >
+                    {upvotes}
+                  </span>
+                </>
+              )}
+              <span className="text-sm text-gray-600">
+                {!canUpvote ? "Can't Upvote" : hasUpvoted ? "Upvoted" : "Upvote"}
+              </span>
+            </button>
+
+            {/* Tooltip for why can't upvote */}
+            {showTooltip && !canUpvote && upvoteMessage && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg whitespace-nowrap z-10">
+                <div className="flex items-center gap-1">
+                  <FaInfoCircle className="w-3 h-3" />
+                  <span>{upvoteMessage}</span>
+                </div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+              </div>
+            )}
+          </div>
 
           {/* View Details Button */}
           <NavLink to={`/issues/${_id}`}>
