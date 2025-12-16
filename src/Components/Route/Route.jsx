@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
         element: <AllIssues />,
         loader: async () => {
           try {
-            const response = await fetch('http://localhost:3000/issues');
+            const response = await fetch('https://public-infra-report-server.vercel.app/issues');
             const data = await response.json();
 
             // Handle both old and new formats
@@ -70,7 +70,7 @@ export const router = createBrowserRouter([
         <ProtectedRoute> 
           <IssueDetails />
         </ProtectedRoute>,
-        loader: ({ params }) => fetch(`http://localhost:3000/issues/${params.id}`)
+        loader: ({ params }) => fetch(`https://public-infra-report-server.vercel.app/issues/${params.id}`)
       },
       {
         path: "/about",

@@ -102,7 +102,7 @@ const RejectIssue = () => {
         // Method 3: Check MongoDB API directly
         console.log("📡 Checking MongoDB API for admin user...");
         try {
-          const response = await fetch(`http://localhost:3000/users/admin@example.com`);
+          const response = await fetch(`https://public-infra-report-server.vercel.app/users/admin@example.com`);
           if (response.ok) {
             const data = await response.json();
             
@@ -148,7 +148,7 @@ const RejectIssue = () => {
   // Fetch pending issues
   const fetchPendingIssues = async () => {
     try {
-      const response = await fetch("http://localhost:3000/issues/pending");
+      const response = await fetch("https://public-infra-report-server.vercel.app/issues/pending");
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
@@ -168,7 +168,7 @@ const RejectIssue = () => {
   // Fetch rejected issues
   const fetchRejectedIssues = async () => {
     try {
-      const response = await fetch("http://localhost:3000/issues/rejected");
+      const response = await fetch("https://public-infra-report-server.vercel.app/issues/rejected");
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
@@ -254,7 +254,7 @@ const RejectIssue = () => {
     setRejecting({ [selectedIssue._id]: true });
 
     try {
-      const response = await fetch(`http://localhost:3000/issues/${selectedIssue._id}/reject`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${selectedIssue._id}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -319,7 +319,7 @@ const RejectIssue = () => {
     setRejecting({ [issueId]: true });
 
     try {
-      const response = await fetch(`http://localhost:3000/issues/${issueId}/undo-reject`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${issueId}/undo-reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -429,7 +429,7 @@ const RejectIssue = () => {
   const directAdminLogin = async () => {
     try {
       console.log("Attempting direct admin login...");
-      const response = await fetch(`http://localhost:3000/users/admin@example.com`);
+      const response = await fetch(`https://public-infra-report-server.vercel.app/users/admin@example.com`);
       const data = await response.json();
       
       if (data.success && data.user && data.user.role === "admin") {

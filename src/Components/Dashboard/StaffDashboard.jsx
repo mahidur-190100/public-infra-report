@@ -54,7 +54,7 @@ const StaffDashboard = () => {
       setStaffData(parsedUser);
 
       // Fetch staff's assigned issues
-      const response = await axios.get(`http://localhost:3000/staff/dashboard-stats`, {
+      const response = await axios.get(`https://public-infra-report-server.vercel.app/staff/dashboard-stats`, {
         params: {
           staffEmail: parsedUser.email,
           staffId: parsedUser.id || parsedUser.email
@@ -67,7 +67,7 @@ const StaffDashboard = () => {
         setStats(response.data.stats);
         
         // Fetch today's issues
-        const issuesRes = await axios.get(`http://localhost:3000/staff/issues`, {
+        const issuesRes = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
           params: {
             staffEmail: parsedUser.email,
             staffId: parsedUser.id || parsedUser.email

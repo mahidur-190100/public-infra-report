@@ -38,7 +38,7 @@ const DashboardHome = () => {
       // Fetch users data
       let users = [];
       try {
-        const usersRes = await axios.get('http://localhost:3000/users');
+        const usersRes = await axios.get('https://public-infra-report-server.vercel.app/users');
         console.log("📊 Users response:", usersRes.data);
         
         // Handle different response formats
@@ -58,7 +58,7 @@ const DashboardHome = () => {
       // Fetch issues data
       let issues = [];
       try {
-        const issuesRes = await axios.get('http://localhost:3000/issues');
+        const issuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues');
         console.log("📊 Issues response:", issuesRes.data);
         
         // Handle different response formats
@@ -97,8 +97,8 @@ const DashboardHome = () => {
       try {
         // Direct fetch as fallback
         const [usersResponse, issuesResponse] = await Promise.allSettled([
-          fetch('http://localhost:3000/users').then(res => res.json()),
-          fetch('http://localhost:3000/issues').then(res => res.json())
+          fetch('https://public-infra-report-server.vercel.app/users').then(res => res.json()),
+          fetch('https://public-infra-report-server.vercel.app/issues').then(res => res.json())
         ]);
         
         let users = [];

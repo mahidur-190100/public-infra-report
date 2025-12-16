@@ -56,7 +56,7 @@ const useUserValidation = () => {
       console.log(`🔍 Validating ${role} user: ${email}`);
 
       // Call validation endpoint
-      const response = await axios.post('http://localhost:3000/validate-user', {
+      const response = await axios.post('https://public-infra-report-server.vercel.app/validate-user', {
         email: email,
         uid: uid
       });

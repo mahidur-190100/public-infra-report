@@ -86,7 +86,7 @@ const AssignStaff = () => {
   const fetchIssues = async () => {
     try {
       setLoading(prev => ({ ...prev, issues: true }));
-      const response = await axios.get('http://localhost:3000/issues');
+      const response = await axios.get('https://public-infra-report-server.vercel.app/issues');
 
       if (response.data.success) {
         const allIssues = response.data.issues;
@@ -128,7 +128,7 @@ const AssignStaff = () => {
       setLoading(prev => ({ ...prev, staff: true }));
 
       // Fetch all users from MongoDB
-      const response = await axios.get('http://localhost:3000/users');
+      const response = await axios.get('https://public-infra-report-server.vercel.app/users');
 
       if (response.data.success) {
         // Filter users with role "staff"
@@ -139,7 +139,7 @@ const AssignStaff = () => {
         console.log('Staff users found:', staffUsers.length);
 
         // Get current in-progress issues count for each staff
-        const inProgressIssuesResponse = await axios.get('http://localhost:3000/issues');
+        const inProgressIssuesResponse = await axios.get('https://public-infra-report-server.vercel.app/issues');
         const allIssues = inProgressIssuesResponse.data.success ? inProgressIssuesResponse.data.issues : [];
 
         const staffWithDetails = staffUsers.map(staff => {
@@ -191,7 +191,7 @@ const AssignStaff = () => {
   const fetchIssueStats = async () => {
     try {
       setLoading(prev => ({ ...prev, stats: true }));
-      const response = await axios.get('http://localhost:3000/issues-stats');
+      const response = await axios.get('https://public-infra-report-server.vercel.app/issues-stats');
 
       if (response.data.success) {
         setStats(response.data.stats);
@@ -224,7 +224,7 @@ const AssignStaff = () => {
 
       // Use the /assign endpoint instead of direct patch
       const response = await axios.post(
-        `http://localhost:3000/issues/${selectedIssue._id}/assign`,
+        `https://public-infra-report-server.vercel.app/issues/${selectedIssue._id}/assign`,
         {
           staffId: selectedStaff._id || selectedStaff.email,
           staffName: selectedStaff.name,
@@ -256,7 +256,7 @@ const AssignStaff = () => {
         console.log('🔄 Trying direct PATCH as fallback...');
 
         const fallbackResponse = await axios.patch(
-          `http://localhost:3000/issues/${selectedIssue._id}`,
+          `https://public-infra-report-server.vercel.app/issues/${selectedIssue._id}`,
           {
             status: 'assigned',
             assignedTo: {
@@ -301,7 +301,7 @@ const AssignStaff = () => {
   const handleUpdateProgress = async (issueId, progress) => {
     try {
       const response = await axios.patch(
-        `http://localhost:3000/issues/${issueId}`,
+        `https://public-infra-report-server.vercel.app/issues/${issueId}`,
         {
           progress: progress,
           timeline: [
@@ -333,7 +333,7 @@ const AssignStaff = () => {
       const issue = inProgressIssues.find(i => i._id === issueId);
 
       const response = await axios.patch(
-        `http://localhost:3000/issues/${issueId}`,
+        `https://public-infra-report-server.vercel.app/issues/${issueId}`,
         {
           status: 'resolved',
           progress: 100,

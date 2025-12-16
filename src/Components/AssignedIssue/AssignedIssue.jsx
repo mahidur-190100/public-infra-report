@@ -104,7 +104,7 @@ const AssignedIssue = () => {
       // METHOD 1: Try the staff/issues endpoint
       try {
         console.log('📡 Trying /staff/issues endpoint...');
-        const staffResponse = await axios.get(`http://localhost:3000/staff/issues`, {
+        const staffResponse = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
           params: {
             staffEmail: parsedUser.email,
             staffId: parsedUser.id || parsedUser.email
@@ -125,7 +125,7 @@ const AssignedIssue = () => {
       // METHOD 2: Fetch all issues and filter manually
       try {
         console.log('📡 Fetching all issues for manual filtering...');
-        const allIssuesResponse = await axios.get('http://localhost:3000/issues');
+        const allIssuesResponse = await axios.get('https://public-infra-report-server.vercel.app/issues');
         
         if (allIssuesResponse.data.success) {
           const allIssues = allIssuesResponse.data.issues || [];
@@ -180,7 +180,7 @@ const AssignedIssue = () => {
       // METHOD 3: Try debug endpoint to see all issues
       try {
         console.log('📡 Checking debug endpoint...');
-        const debugResponse = await axios.get('http://localhost:3000/debug/all-issues');
+        const debugResponse = await axios.get('https://public-infra-report-server.vercel.app/debug/all-issues');
         if (debugResponse.data.success) {
           const debugIssues = debugResponse.data.issues || [];
           
@@ -341,7 +341,7 @@ const AssignedIssue = () => {
       console.log(`Updating issue ${issueId} status to ${newStatus}`);
       
       // Call API to update status
-      const response = await axios.post(`http://localhost:3000/issues/${issueId}/update-status`, {
+      const response = await axios.post(`https://public-infra-report-server.vercel.app/issues/${issueId}/update-status`, {
         status: newStatus,
         message: `Status updated to ${newStatus} by staff member`,
         updatedBy: staffData?.name || staffData?.email || 'Staff',
@@ -397,7 +397,7 @@ const AssignedIssue = () => {
 
   const handleUpdateProgress = async (issueId, progress) => {
     try {
-      const response = await axios.patch(`http://localhost:3000/issues/${issueId}`, {
+      const response = await axios.patch(`https://public-infra-report-server.vercel.app/issues/${issueId}`, {
         progress: progress,
         updatedAt: new Date().toISOString()
       });

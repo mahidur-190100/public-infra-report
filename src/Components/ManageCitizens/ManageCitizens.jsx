@@ -53,7 +53,7 @@ const ManageCitizens = () => {
   const fetchAllUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3000/users');
+      const response = await axios.get('https://public-infra-report-server.vercel.app/users');
       if (response.data.success) {
         const allUsers = response.data.users;
         setUsers(allUsers);
@@ -136,7 +136,7 @@ const ManageCitizens = () => {
 
     try {
       // Update user in backend
-      const response = await axios.patch(`http://localhost:3000/users/${selectedUser.email}`, {
+      const response = await axios.patch(`https://public-infra-report-server.vercel.app/users/${selectedUser.email}`, {
         blocked: true,
         blockReason: blockReason || 'Blocked by administrator',
         blockedAt: new Date().toISOString(),
@@ -180,7 +180,7 @@ const ManageCitizens = () => {
 
     try {
       // Update user in backend
-      const response = await axios.patch(`http://localhost:3000/users/${selectedUser.email}`, {
+      const response = await axios.patch(`https://public-infra-report-server.vercel.app/users/${selectedUser.email}`, {
         blocked: false,
         unblockedAt: new Date().toISOString(),
         unblockedBy: 'Admin',

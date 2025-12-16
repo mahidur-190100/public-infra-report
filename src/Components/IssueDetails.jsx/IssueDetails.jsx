@@ -141,7 +141,7 @@ const IssueDetails = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/issues/${id}/check-permissions`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}/check-permissions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +166,7 @@ const IssueDetails = () => {
 
   const checkUpvotePermissions = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/issues/${id}/can-upvote`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}/can-upvote`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -192,7 +192,7 @@ const IssueDetails = () => {
     setIsUpvoting(true);
 
     try {
-      const response = await fetch(`http://localhost:3000/issues/${id}/upvote`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}/upvote`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -287,7 +287,7 @@ const IssueDetails = () => {
         updateType: "user_edit"
       };
 
-      const response = await fetch(`http://localhost:3000/issues/${id}`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -302,7 +302,7 @@ const IssueDetails = () => {
           setIssue(data.data);
         } else {
           // Fetch fresh data if not returned
-          const updatedResponse = await fetch(`http://localhost:3000/issues/${id}`);
+          const updatedResponse = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}`);
           const updatedData = await updatedResponse.json();
           if (updatedData.success) {
             setIssue(updatedData.data || updatedData);
@@ -344,7 +344,7 @@ const IssueDetails = () => {
   const deleteIssue = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://localhost:3000/issues/${id}/delete`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}/delete`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -484,7 +484,7 @@ const IssueDetails = () => {
       };
 
       // Save boost payment to MongoDB
-      const boostResponse = await fetch('http://localhost:3000/boost-payment', {
+      const boostResponse = await fetch('https://public-infra-report-server.vercel.app/boost-payment', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -496,7 +496,7 @@ const IssueDetails = () => {
 
       if (boostData.success) {
         // Update issue priority to high
-        const updateResponse = await fetch(`http://localhost:3000/issues/${id}`, {
+        const updateResponse = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",

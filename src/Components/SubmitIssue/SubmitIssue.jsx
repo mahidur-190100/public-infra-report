@@ -62,7 +62,7 @@ const SubmitIssue = () => {
     try {
       if (!user?.email) return;
       
-      const response = await axios.get(`http://localhost:3000/my-issues?email=${user.email}`);
+      const response = await axios.get(`https://public-infra-report-server.vercel.app/my-issues?email=${user.email}`);
       if (response.data.success) {
         setUserIssuesCount(response.data.count || 0);
       }
@@ -418,7 +418,7 @@ const SubmitIssue = () => {
       console.log('Submitting to MongoDB with user info:', issueData);
 
       // Step 3: Send to backend
-      const response = await axios.post('http://localhost:3000/issues', issueData, {
+      const response = await axios.post('https://public-infra-report-server.vercel.app/issues', issueData, {
         headers: {
           'Content-Type': 'application/json',
         }

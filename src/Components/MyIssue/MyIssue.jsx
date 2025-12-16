@@ -39,7 +39,7 @@ const MyIssues = () => {
         setLoading(true);
         
         // Fetch from your backend
-        const response = await axios.get('http://localhost:3000/my-issues', {
+        const response = await axios.get('https://public-infra-report-server.vercel.app/my-issues', {
           params: {
             email: user.email
           }
@@ -49,7 +49,7 @@ const MyIssues = () => {
           setIssues(response.data.issues);
         } else {
           // Fallback: Get all issues and filter locally
-          const allResponse = await axios.get('http://localhost:3000/issues');
+          const allResponse = await axios.get('https://public-infra-report-server.vercel.app/issues');
           if (allResponse.data) {
             const userIssues = allResponse.data.filter(issue => 
               issue.userEmail === user.email || 
@@ -129,7 +129,7 @@ const MyIssues = () => {
       if (result.isConfirmed) {
         try {
           // Delete from backend
-          await axios.delete(`http://localhost:3000/issues/${issueId}`);
+          await axios.delete(`https://public-infra-report-server.vercel.app/issues/${issueId}`);
           
           // Delete from localStorage
           const localIssues = JSON.parse(localStorage.getItem('myIssues') || '[]');
@@ -151,7 +151,7 @@ const MyIssues = () => {
   // Handle upvote
   const handleUpvote = async (issueId) => {
     try {
-      const response = await axios.post(`http://localhost:3000/issues/${issueId}/upvote`, {
+      const response = await axios.post(`https://public-infra-report-server.vercel.app/issues/${issueId}/upvote`, {
         userId: user?.email || 'anonymous'
       });
       

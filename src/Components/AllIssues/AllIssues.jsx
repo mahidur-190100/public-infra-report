@@ -25,7 +25,7 @@ const AllIssues = () => {
     const fetchIssues = async () => {
         try {
             setRefreshing(true);
-            const response = await fetch('http://localhost:3000/issues');
+            const response = await fetch('https://public-infra-report-server.vercel.app/issues');
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

@@ -128,7 +128,7 @@ const IssueCard = ({ issue }) => {
       // Server-side check for final validation
       try {
         const response = await fetch(
-          `http://localhost:3000/issues/${_id}/can-upvote`,
+          `https://public-infra-report-server.vercel.app/issues/${_id}/can-upvote`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -181,7 +181,7 @@ const IssueCard = ({ issue }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/issues/${_id}/upvote`,
+        `https://public-infra-report-server.vercel.app/issues/${_id}/upvote`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

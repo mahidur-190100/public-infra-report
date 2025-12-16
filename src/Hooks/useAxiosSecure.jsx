@@ -9,7 +9,7 @@ const axiosSecure = axios.create({
 const useAxiosSecure = () => {
     const {user} = useAuth();
     useEffect(() => {
-        // You can set up interceptors or any other configurations here
+       
         axiosSecure.interceptors.request.use(config=>{
             config.headers.Authorization = `Bearer ${user?.accessToken}`;
             return config;

@@ -255,7 +255,7 @@ const PremiumSubscription = () => {
       };
 
       // Save payment to MongoDB
-      const paymentResponse = await axios.post('http://localhost:3000/create-payment', paymentData);
+      const paymentResponse = await axios.post('https://public-infra-report-server.vercel.app/create-payment', paymentData);
 
       if (paymentResponse.data.success) {
         // Update user subscription in localStorage

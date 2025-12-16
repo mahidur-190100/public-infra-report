@@ -79,11 +79,11 @@ const ViewPayment = () => {
       console.log('🔍 Fetching all payments...');
       
       // Fetch regular payments (subscriptions)
-      const paymentsResponse = await axios.get('http://localhost:3000/payments');
+      const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments');
       console.log('✅ Regular payments response:', paymentsResponse.data);
       
       // Fetch boost payments
-      const boostResponse = await axios.get('http://localhost:3000/boost-payments');
+      const boostResponse = await axios.get('https://public-infra-report-server.vercel.app/boost-payments');
       console.log('🚀 Boost payments response:', boostResponse.data);
       
       let allPayments = [];
@@ -156,7 +156,7 @@ const ViewPayment = () => {
       
       // Try to load at least regular payments
       try {
-        const paymentsResponse = await axios.get('http://localhost:3000/payments');
+        const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments');
         if (paymentsResponse.data.success && Array.isArray(paymentsResponse.data.payments)) {
           const regularPayments = paymentsResponse.data.payments.map(payment => ({
             ...payment,
@@ -194,7 +194,7 @@ const ViewPayment = () => {
 
       // Try to fetch regular payment stats
       try {
-        const paymentsResponse = await axios.get('http://localhost:3000/payments/stats');
+        const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments/stats');
         if (paymentsResponse.data.success) {
           statsData = {
             ...statsData,
@@ -209,7 +209,7 @@ const ViewPayment = () => {
 
       // Try to fetch boost payment stats
       try {
-        const boostResponse = await axios.get('http://localhost:3000/boost-payments');
+        const boostResponse = await axios.get('https://public-infra-report-server.vercel.app/boost-payments');
         if (boostResponse.data.success && Array.isArray(boostResponse.data.payments)) {
           const boostPayments = boostResponse.data.payments;
           const boostRevenue = boostPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);

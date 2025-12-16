@@ -80,7 +80,7 @@ const ResolvedIssues = () => {
 
       // Method 1: Get all issues and filter for resolved ones
       try {
-        const response = await axios.get('http://localhost:3000/issues');
+        const response = await axios.get('https://public-infra-report-server.vercel.app/issues');
         
         if (response.data.success) {
           const allIssues = response.data.issues || [];
@@ -124,7 +124,7 @@ const ResolvedIssues = () => {
         console.error('Error fetching all issues:', error);
         // Try alternative method
         try {
-          const staffResponse = await axios.get(`http://localhost:3000/staff/issues`, {
+          const staffResponse = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
             params: {
               staffEmail: parsedUser.email,
               staffId: parsedUser.id || parsedUser.email

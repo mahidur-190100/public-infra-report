@@ -33,7 +33,7 @@ const ManageStaff = () => {
     try {
       setLoading(true);
       console.log('🔍 Fetching all users...');
-      const response = await axios.get('http://localhost:3000/users');
+      const response = await axios.get('https://public-infra-report-server.vercel.app/users');
       console.log('👥 Users API Response:', response.data);
       
       if (response.data.success && Array.isArray(response.data.users)) {
@@ -75,7 +75,7 @@ const ManageStaff = () => {
     try {
       console.log(`🔄 Updating user ${userEmail} role to ${newRole}`);
       
-      const response = await axios.post('http://localhost:3000/update-role', {
+      const response = await axios.post('https://public-infra-report-server.vercel.app/update-role', {
         email: userEmail,
         role: newRole
       });

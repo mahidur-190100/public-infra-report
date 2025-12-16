@@ -14,7 +14,7 @@ const ResolvedIssuesSection = () => {
       try {
         setLoading(true);
         const response = await fetch(
-          "http://localhost:3000/resolved-issues/limit?limit=6"
+          "https://public-infra-report-server.vercel.app/resolved-issues/limit?limit=6"
         );
         
         if (!response.ok) {

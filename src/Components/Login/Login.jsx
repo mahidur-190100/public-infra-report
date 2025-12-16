@@ -21,7 +21,7 @@ const Login = () => {
                 
                 // ✅ First, check if this user exists in MongoDB
                 console.log(`🔍 Checking backend for user: ${result.user.email}`);
-                axios.get(`http://localhost:3000/users/${result.user.email}`)
+                axios.get(`https://public-infra-report-server.vercel.app/users/${result.user.email}`)
                     .then(response => {
                         console.log("✅ Backend response:", response.data);
                         
@@ -154,7 +154,7 @@ const Login = () => {
                         console.log("Creating new user in backend:", newUser);
                         
                         // Save to backend
-                        axios.post('http://localhost:3000/users', newUser)
+                        axios.post('https://public-infra-report-server.vercel.app/users', newUser)
                             .then(() => {
                                 // Clear all localStorage
                                 localStorage.removeItem('user');
@@ -229,7 +229,7 @@ const Login = () => {
                 console.log("Google login successful:", result.user);
                 
                 // ✅ Check if this Google user exists
-                axios.get(`http://localhost:3000/users/${result.user.email}`)
+                axios.get(`https://public-infra-report-server.vercel.app/users/${result.user.email}`)
                     .then(response => {
                         if (response.data.success) {
                             const userData = response.data.user;
@@ -348,7 +348,7 @@ const Login = () => {
                             updatedAt: new Date().toISOString()
                         };
                         
-                        axios.post('http://localhost:3000/users', newUser)
+                        axios.post('https://public-infra-report-server.vercel.app/users', newUser)
                             .then(() => {
                                 localStorage.removeItem('user');
                                 localStorage.removeItem('admin');

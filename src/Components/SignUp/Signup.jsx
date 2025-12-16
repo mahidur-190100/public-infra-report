@@ -283,7 +283,7 @@ const Signup = () => {
                                 toast.success('Account created successfully!');
 
                                 // ✅ IMPORTANT: Send user data to your backend
-                                axios.post('http://localhost:3000/users', userData)
+                                axios.post('https://public-infra-report-server.vercel.app/users', userData)
                                     .then(backendRes => {
                                         console.log('User saved to backend:', backendRes.data);
                                     })

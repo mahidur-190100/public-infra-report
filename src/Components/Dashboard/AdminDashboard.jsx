@@ -31,15 +31,15 @@ const AdminDashboard = () => {
       console.log('🔍 Fetching dashboard data...');
       
       // Fetch issue statistics
-      const issuesRes = await axios.get('http://localhost:3000/issues-stats');
+      const issuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues-stats');
       console.log('📊 Issues stats response:', issuesRes.data);
       
       // Fetch all issues for more detailed stats
-      const allIssuesRes = await axios.get('http://localhost:3000/issues');
+      const allIssuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues');
       console.log('📊 All issues response:', allIssuesRes.data);
       
       // Fetch user statistics
-      const usersRes = await axios.get('http://localhost:3000/users');
+      const usersRes = await axios.get('https://public-infra-report-server.vercel.app/users');
       console.log('👥 Users response:', usersRes.data);
       
       // Process issues data
