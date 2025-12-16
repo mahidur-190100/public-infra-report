@@ -15,7 +15,7 @@ import {
   FaExclamationTriangle,
   FaCalendarDay
 } from 'react-icons/fa';
-import Navbar from '../Shared/Navbar/Navbar';
+
 
 const StaffLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -101,11 +101,7 @@ const StaffLayout = () => {
     
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('admin');
-    navigate('/login');
-  };
+ 
 
   /* ================== LOADING ================== */
   if (!staffData) {
@@ -121,7 +117,7 @@ const StaffLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+  
 
       <div className="flex">
         {/* Mobile Menu Button */}
@@ -158,12 +154,8 @@ const StaffLayout = () => {
                 <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">
                   Staff Member
                 </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                >
-                  Logout
-                </button>
+              
+              
               </div>
             </div>
           </div>

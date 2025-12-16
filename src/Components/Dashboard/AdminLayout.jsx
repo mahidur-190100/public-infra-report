@@ -10,9 +10,10 @@ import {
   FaUserCheck,
   FaUserTimes,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaHome // Added FaHome import
 } from 'react-icons/fa';
-import Navbar from '../Shared/Navbar/Navbar';
+
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,11 +84,7 @@ const AdminLayout = () => {
     }
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+ 
 
   /* ================== LOADING ================== */
   if (!adminData) {
@@ -100,7 +97,7 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+     
 
       <div className="flex">
         {/* Mobile Menu Button */}
@@ -131,12 +128,6 @@ const AdminLayout = () => {
                 <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">
                   Admin
                 </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-red-600 hover:text-red-800"
-                >
-                  Logout
-                </button>
               </div>
             </div>
           </div>
@@ -162,6 +153,19 @@ const AdminLayout = () => {
               </NavLink>
             ))}
           </nav>
+
+          {/* Back to Home Button - ADDED HERE */}
+          <div className="p-4 border-t border-gray-200 mt-auto">
+            <div className="text-center">
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FaHome className="w-4 h-4" />
+                Back to Home
+              </button>
+            </div>
+          </div>
         </aside>
 
         {/* Content */}

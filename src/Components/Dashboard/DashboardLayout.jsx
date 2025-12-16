@@ -19,7 +19,7 @@ import {
   FaUserTimes,
   FaUserTie
 } from 'react-icons/fa';
-import Navbar from '../Shared/Navbar/Navbar';
+
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -161,12 +161,7 @@ const DashboardLayout = () => {
   // Determine menu items based on userRole
   const menuItems = userRole === 'admin' ? adminMenuItems : userMenuItems;
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-
+  
   // Show loading until userData is set
   if (!userData) {
     return (
@@ -196,8 +191,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar - Full width */}
-      <Navbar />
+    
       
       <div className="flex">
         {/* Mobile Menu Button */}
@@ -250,12 +244,7 @@ const DashboardLayout = () => {
                 }`}>
                   {userRole === 'admin' ? 'Administrator' : 'Citizen User'}
                 </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-red-600 hover:text-red-800"
-                >
-                  Logout
-                </button>
+                
               </div>
             </div>
           </div>
@@ -298,6 +287,19 @@ const DashboardLayout = () => {
               </div>
             </div>
           )}
+
+          {/* Back to Home Button - ADDED HERE */}
+          <div className="p-4 border-t border-gray-200 mt-auto">
+            <div className="text-center">
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FaHome className="w-4 h-4" />
+                Back to Home
+              </button>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content - Responsive */}

@@ -107,7 +107,7 @@ const Login = () => {
                                     toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
                                         icon: '👑'
                                     });
-                                    navigate('/dashboard/admin');
+                                    navigate('/');
                                     break;
                                     
                                 case 'staff':
@@ -118,7 +118,7 @@ const Login = () => {
                                     toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
                                         icon: '👨‍💼'
                                     });
-                                    navigate('/dashboard/staff');
+                                    navigate('/');
                                     break;
                                     
                                 case 'user':
@@ -129,7 +129,7 @@ const Login = () => {
                                     toast.success(`Welcome ${userSessionData.displayName}!`, {
                                         icon: '👋'
                                     });
-                                    navigate('/dashboard');
+                                    navigate('/');
                                     break;
                             }
                         }
@@ -174,7 +174,7 @@ const Login = () => {
                                 });
                                 
                                 // Navigate to regular user dashboard
-                                navigate('/dashboard');
+                                navigate('/');
                             })
                             .catch(backendError => {
                                 console.error('❌ Error creating user in backend:', backendError);
@@ -193,7 +193,7 @@ const Login = () => {
                                     icon: '👋'
                                 });
                                 
-                                navigate('/dashboard');
+                                navigate('/');
                             });
                     });
             })
@@ -308,7 +308,7 @@ const Login = () => {
                                     toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
                                         icon: '👑'
                                     });
-                                    navigate('/dashboard/admin');
+                                    navigate('/');
                                     break;
                                     
                                 case 'staff':
@@ -318,7 +318,7 @@ const Login = () => {
                                     toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
                                         icon: '👨‍💼'
                                     });
-                                    navigate('/dashboard/staff');
+                                    navigate('/');
                                     break;
                                     
                                 case 'user':
@@ -328,7 +328,7 @@ const Login = () => {
                                     toast.success(`Welcome ${userSessionData.displayName}!`, {
                                         icon: '👋'
                                     });
-                                    navigate('/dashboard');
+                                    navigate('/');
                                     break;
                             }
                         }
@@ -364,7 +364,7 @@ const Login = () => {
                                     icon: '🎉'
                                 });
                                 
-                                navigate('/dashboard');
+                                navigate('/');
                             })
                             .catch(backendError => {
                                 localStorage.removeItem('user');
@@ -381,7 +381,7 @@ const Login = () => {
                                     icon: '👋'
                                 });
                                 
-                                navigate('/dashboard');
+                                navigate('/');
                             });
                     });
             })

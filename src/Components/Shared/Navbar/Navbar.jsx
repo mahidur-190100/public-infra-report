@@ -1,18 +1,24 @@
 import React from 'react'
 import logo from '../../../assets/logo.png'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, Navigate, NavLink } from 'react-router-dom'
 import useAuth from '../../../Hooks/useAuth'
 
 const Navbar = () => {
     const { user, logout } = useAuth();
-
     const handleLogout = () => {
         logout()
-            .then()
+            .then(() => {
+                // Clear localStorage items
+                localStorage.removeItem('admin');
+                localStorage.removeItem('user');
+                
+                // Redirect to home
+                Navigate('/');
+            })
             .catch(error => {
                 console.log(error.message);
             });
-    }; 
+    };
 
     const links = <>
         <li><NavLink to="/" className={({ isActive }) => isActive ? 'bg-blue-700 text-white' : 'hover:bg-blue-700'}>Home</NavLink></li>
@@ -81,7 +87,7 @@ const Navbar = () => {
                                             <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                         </li>
                                         <li><NavLink to="/dashboard">Dashboard</NavLink></li>
-                                        <li><NavLink to="/settings">Settings</NavLink></li>
+
                                         <li><hr /></li>
                                         <li><a onClick={handleLogout} className="text-red-600 cursor-pointer">Logout</a></li>
                                     </ul>
