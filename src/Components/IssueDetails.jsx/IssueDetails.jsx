@@ -235,6 +235,12 @@ const IssueDetails = () => {
 
   // Edit functions
   const startEditing = () => {
+    const isPending = (issue?.status || '').toLowerCase() === 'pending';
+    const isUser = permissions.userRole === 'user';
+    if (isUser && !isPending) {
+      toast.error("You can only edit when the issue is Pending.");
+      return;
+    }
     setEditForm({
       title: issue.title || "",
       description: issue.description || "",
@@ -259,6 +265,14 @@ const IssueDetails = () => {
   };
 
   const saveEdit = async () => {
+    const isPending = (issue?.status || '').toLowerCase() === 'pending';
+    const isUser = permissions.userRole === 'user';
+    if (isUser && !isPending) {
+      toast.error("You can only edit when the issue is Pending.");
+      setIsEditing(false);
+      return;
+    }
+
     if (!editForm.title || !editForm.description || !editForm.category || !editForm.location) {
       toast.error("Please fill in all required fields");
       return;
@@ -314,6 +328,12 @@ const IssueDetails = () => {
 
   // Delete functions
   const confirmDelete = () => {
+    const isPending = (issue?.status || '').toLowerCase() === 'pending';
+    const isUser = permissions.userRole === 'user';
+    if (isUser && !isPending) {
+      toast.error("You can only delete when the issue is Pending.");
+      return;
+    }
     setShowDeleteConfirm(true);
   };
 
@@ -352,8 +372,15 @@ const IssueDetails = () => {
 
   // Boost functions
   const openBoostModal = () => {
+    const isPending = (issue?.status || '').toLowerCase() === 'pending';
+    const isUser = permissions.userRole === 'user';
+
     if (!currentUserEmail) {
       toast.error("Please login to boost issues");
+      return;
+    }
+    if (isUser && !isPending) {
+      toast.error("You can only boost Pending issues.");
       return;
     }
     setShowBoostModal(true);
@@ -408,6 +435,13 @@ const IssueDetails = () => {
   };
 
   const processBoostPayment = async () => {
+    const isPending = (issue?.status || '').toLowerCase() === 'pending';
+    const isUser = permissions.userRole === 'user';
+    if (isUser && !isPending) {
+      toast.error("Cannot boost non-pending issues.");
+      return;
+    }
+
     if (!cardNumber || !cardName || !expiryDate || !cvc) {
       toast.error("Please fill in all card details");
       return;
@@ -688,11 +722,22 @@ const IssueDetails = () => {
     "Public Furniture"
   ];
 
-  // Check if user can boost this issue
-  const canBoost = currentUserEmail && 
-                  permissions.isReporter && 
-                  priority !== "high" && 
-                  status?.toLowerCase() !== "resolved";
+  // Derived UI permissions based on role and status
+  const isPending = (status || '').toLowerCase() === 'pending';
+  const isUser = permissions.userRole === 'user';
+
+  // Final UI gate: users can edit/delete only when Pending; admin/staff keep server permissions
+  const canEditUI = Boolean(permissions.canEdit && (isUser ? isPending : true));
+  const canDeleteUI = Boolean(permissions.canDelete && (isUser ? isPending : true));
+
+  // Boost: only reporter, user role, Pending, and not already high priority
+  const canBoost = Boolean(
+    currentUserEmail &&
+    permissions.isReporter &&
+    isUser &&
+    isPending &&
+    (priority || '').toLowerCase() !== 'high'
+  );
 
   return (
     <div className="min-h-screen py-8">
@@ -722,8 +767,8 @@ const IssueDetails = () => {
       />
       
       <div className="max-w-6xl mx-auto px-4">
-        {/* Edit/Delete Actions Bar */}
-        {!loadingPermissions && (permissions.canEdit || permissions.canDelete || canBoost) && (
+        {/* Edit/Delete/Boost Actions Bar */}
+        {!loadingPermissions && (canEditUI || canDeleteUI || canBoost) && (
           <div className="mb-6 p-4 bg-white rounded-xl shadow-lg">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -731,7 +776,7 @@ const IssueDetails = () => {
                 <p className="text-sm text-gray-600">
                   {permissions.userRole === "admin" && "Administrator - Full access"}
                   {permissions.userRole === "staff" && "Staff - Can update status"}
-                  {permissions.userRole === "user" && permissions.isReporter && "Issue Owner - Can edit, delete and boost"}
+                  {permissions.userRole === "user" && permissions.isReporter && "Issue Owner - Can edit, delete and boost (Pending only)"}
                   {permissions.userRole === "user" && !permissions.isReporter && "Regular User - Limited access"}
                 </p>
               </div>
@@ -748,7 +793,7 @@ const IssueDetails = () => {
                   </button>
                 )}
                 
-                {permissions.canEdit && !isEditing && (
+                {canEditUI && !isEditing && (
                   <button
                     onClick={startEditing}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -757,7 +802,7 @@ const IssueDetails = () => {
                   </button>
                 )}
                 
-                {permissions.canDelete && (
+                {canDeleteUI && (
                   <button
                     onClick={confirmDelete}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"

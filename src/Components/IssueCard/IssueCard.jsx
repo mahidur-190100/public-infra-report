@@ -21,9 +21,11 @@ import {
   FaBan,
   FaInfoCircle
 } from "react-icons/fa";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const IssueCard = ({ issue }) => {
+  const navigate = useNavigate();
+
   const {
     _id,
     title,
@@ -41,11 +43,12 @@ const IssueCard = ({ issue }) => {
     userEmail: issueUserEmail
   } = issue;
 
-  // Get current user info
+  // Get current user info (no demo fallback; if not present -> not logged in)
   const getCurrentUser = () => {
     try {
-      // First try to get user from localStorage (from your auth system)
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem("user");
+      const adminStr = localStorage.getItem("admin");
+
       if (userStr) {
         const user = JSON.parse(userStr);
         return {
@@ -55,20 +58,18 @@ const IssueCard = ({ issue }) => {
           id: user.id || user.email
         };
       }
-      
-      // Fallback to the old userId system for demo
-      let userId = localStorage.getItem("userId");
-      if (!userId) {
-        userId = "user_" + Date.now() + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem("userId", userId);
+
+      if (adminStr) {
+        const admin = JSON.parse(adminStr);
+        return {
+          email: admin.email,
+          role: admin.role || "admin",
+          displayName: admin.displayName,
+          id: admin.id || admin.email
+        };
       }
-      
-      return {
-        email: userId.includes('@') ? userId : `${userId}@demo.com`,
-        role: "user",
-        displayName: "Demo User",
-        id: userId
-      };
+
+      return null;
     } catch (error) {
       console.error("Error getting user:", error);
       return null;
@@ -76,9 +77,10 @@ const IssueCard = ({ issue }) => {
   };
 
   const currentUser = getCurrentUser();
-  const currentUserEmail = currentUser?.email || '';
-  const currentUserRole = currentUser?.role || 'user';
+  const currentUserEmail = currentUser?.email || "";
+  const currentUserRole = currentUser?.role || "user";
   const currentUserId = currentUser?.id || currentUserEmail;
+  const isLoggedIn = !!currentUserEmail;
 
   const [upvotes, setUpvotes] = useState(initialUpvotes || 0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
@@ -90,9 +92,11 @@ const IssueCard = ({ issue }) => {
   // Check if user can upvote this issue
   useEffect(() => {
     const checkUpvotePermissions = async () => {
-      if (!currentUserEmail || !currentUserId) {
-        setCanUpvote(false);
+      // Not logged in: keep button clickable (to redirect), just show hint
+      if (!isLoggedIn) {
+        setCanUpvote(true); // keep clickable to navigate to /login
         setUpvoteMessage("Please login to upvote");
+        setHasUpvoted(false);
         return;
       }
 
@@ -101,10 +105,13 @@ const IssueCard = ({ issue }) => {
         setHasUpvoted(initialUpvotedBy.includes(currentUserId));
       }
 
-      // Quick client-side check first
-      const isAdminOrStaff = currentUserRole === 'admin' || currentUserRole === 'staff';
-      const isOwnIssue = issueUserEmail && currentUserEmail && 
-                         issueUserEmail.toLowerCase() === currentUserEmail.toLowerCase();
+      // Quick client-side checks
+      const isAdminOrStaff =
+        currentUserRole === "admin" || currentUserRole === "staff";
+      const isOwnIssue =
+        issueUserEmail &&
+        currentUserEmail &&
+        issueUserEmail.toLowerCase() === currentUserEmail.toLowerCase();
 
       if (isAdminOrStaff) {
         setCanUpvote(false);
@@ -120,36 +127,54 @@ const IssueCard = ({ issue }) => {
 
       // Server-side check for final validation
       try {
-        const response = await fetch(`http://localhost:3000/issues/${_id}/can-upvote`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            userId: currentUserId
-          }),
-        });
+        const response = await fetch(
+          `http://localhost:3000/issues/${_id}/can-upvote`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: currentUserId,
+              userEmail: currentUserEmail, // send email to match backend requirement
+            }),
+          }
+        );
 
         const data = await response.json();
-        
+
         if (data.success) {
           setCanUpvote(data.canUpvote);
           setUpvoteMessage(data.message || "");
           setHasUpvoted(data.hasUpvoted || false);
+        } else {
+          // fallback to client checks
         }
       } catch (error) {
         console.error("Error checking upvote permissions:", error);
-        // Keep client-side check results
       }
     };
 
     checkUpvotePermissions();
-  }, [_id, currentUserEmail, currentUserRole, currentUserId, issueUserEmail, initialUpvotedBy]);
+  }, [
+    _id,
+    currentUserEmail,
+    currentUserRole,
+    currentUserId,
+    issueUserEmail,
+    initialUpvotedBy,
+    isLoggedIn,
+  ]);
 
   const handleUpvote = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    // Not logged in -> send to login page
+    if (!isLoggedIn) {
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
+
+    // If logged in but not allowed, do nothing
     if (isUpvoting || !canUpvote) return;
 
     setIsUpvoting(true);
@@ -159,11 +184,11 @@ const IssueCard = ({ issue }) => {
         `http://localhost:3000/issues/${_id}/upvote`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            userId: currentUserId
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: currentUserId,
+            userEmail: currentUserEmail,
+            userRole: currentUserRole,
           }),
         }
       );
@@ -172,16 +197,13 @@ const IssueCard = ({ issue }) => {
 
       if (data.success) {
         if (data.canUpvote) {
-          // Upvote was successful
           setUpvotes(data.upvotes);
           setHasUpvoted(data.hasUpvoted);
         } else {
-          // Server says can't upvote (maybe permissions changed)
           setCanUpvote(false);
           setUpvoteMessage(data.message || "Cannot upvote this issue");
         }
       } else {
-        // Server returned error
         setCanUpvote(false);
         setUpvoteMessage(data.message || "Upvote failed");
         console.error("Upvote failed:", data.message);
@@ -197,19 +219,21 @@ const IssueCard = ({ issue }) => {
   // Function to safely get assigned staff name
   const getAssignedStaffName = () => {
     if (!assignedTo) return null;
-    
-    if (typeof assignedTo === 'string') return assignedTo;
-    
-    if (typeof assignedTo === 'object' && assignedTo !== null) {
-      return assignedTo.name || assignedTo.displayName || assignedTo.department || 'Assigned Staff';
+    if (typeof assignedTo === "string") return assignedTo;
+    if (typeof assignedTo === "object" && assignedTo !== null) {
+      return (
+        assignedTo.name ||
+        assignedTo.displayName ||
+        assignedTo.department ||
+        "Assigned Staff"
+      );
     }
-    
     return null;
   };
 
   const getStatusBadge = (status) => {
-    const statusText = status || 'Pending';
-    
+    const statusText = status || "Pending";
+
     switch (statusText.toLowerCase()) {
       case "pending":
         return (
@@ -239,9 +263,12 @@ const IssueCard = ({ issue }) => {
   };
 
   const getPriorityBadge = (priority) => {
-    const priorityText = priority || 'Normal';
-    
-    if (priorityText.toLowerCase() === "high" || priorityText.toLowerCase() === "critical") {
+    const priorityText = priority || "Normal";
+
+    if (
+      priorityText.toLowerCase() === "high" ||
+      priorityText.toLowerCase() === "critical"
+    ) {
       return (
         <div className="flex items-center gap-1">
           <FaExclamationTriangle className="w-3 h-3" />
@@ -253,8 +280,8 @@ const IssueCard = ({ issue }) => {
   };
 
   const getCategoryIcon = (category) => {
-    const categoryText = category || 'General';
-    
+    const categoryText = category || "General";
+
     switch (categoryText.toLowerCase()) {
       case "road damage":
       case "roads":
@@ -300,6 +327,9 @@ const IssueCard = ({ issue }) => {
 
   const assignedStaffName = getAssignedStaffName();
 
+  // Disable only if logged in but not allowed; keep clickable when not logged in (to redirect)
+  const disableUpvote = isUpvoting || (isLoggedIn && !canUpvote);
+
   return (
     <div className="card bg-gray-100 w-full h-full shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-200 cursor-pointer flex flex-col">
       {/* Image Section - Fixed Height */}
@@ -328,21 +358,26 @@ const IssueCard = ({ issue }) => {
           {getPriorityBadge(priority)}
         </div>
 
-        {/* Progress Number (for In-Progress status) */}
-        {(status === "In-Progress" || status === "in progress" || status === "in-progress") && progress && (
-          <div className="flex items-center gap-2 mb-3">
-            <FaTasks className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">
-              Progress:{" "}
-              <span className="text-blue-600 font-bold">{progress}%</span>
-            </span>
-          </div>
-        )}
+        {/* Progress Number */}
+        {(status === "In-Progress" ||
+          status === "in progress" ||
+          status === "in-progress") &&
+          progress && (
+            <div className="flex items-center gap-2 mb-3">
+              <FaTasks className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700">
+                Progress:{" "}
+                <span className="text-blue-600 font-bold">{progress}%</span>
+              </span>
+            </div>
+          )}
 
         {/* Location */}
         <div className="flex items-center text-gray-700 mb-3">
           <FaMapMarkerAlt className="w-4 h-4 text-gray-500 mr-2" />
-          <span className="text-sm line-clamp-1">{location || "Location not specified"}</span>
+          <span className="text-sm line-clamp-1">
+            {location || "Location not specified"}
+          </span>
         </div>
 
         {/* Reporter and Date */}
@@ -367,11 +402,13 @@ const IssueCard = ({ issue }) => {
                 <span className="text-gray-600 truncate">{assignedStaffName}</span>
               </div>
             </div>
-            {assignedTo && typeof assignedTo === 'object' && assignedTo.department && (
-              <div className="text-xs text-gray-500 ml-6 mt-1">
-                Dept: {assignedTo.department}
-              </div>
-            )}
+            {assignedTo &&
+              typeof assignedTo === "object" &&
+              assignedTo.department && (
+                <div className="text-xs text-gray-500 ml-6 mt-1">
+                  Dept: {assignedTo.department}
+                </div>
+              )}
           </div>
         )}
 
@@ -381,21 +418,30 @@ const IssueCard = ({ issue }) => {
           <div className="relative">
             <button
               onClick={handleUpvote}
-              disabled={isUpvoting || !canUpvote}
+              disabled={disableUpvote}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                hasUpvoted && canUpvote
+                hasUpvoted && isLoggedIn && canUpvote
                   ? "bg-blue-100 border border-blue-300"
+                  : !isLoggedIn
+                  ? "bg-gray-200 hover:bg-gray-300"
                   : !canUpvote
                   ? "bg-gray-100 border border-gray-300 cursor-not-allowed"
                   : "bg-gray-200 hover:bg-gray-300"
               } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
             >
-              {!canUpvote ? (
+              {!isLoggedIn ? (
+                <>
+                  <FaThumbsUp className="w-4 h-4 text-gray-600" />
+                  <span className="font-bold text-gray-900">{upvotes}</span>
+                  <span className="text-sm text-gray-600">Upvote</span>
+                </>
+              ) : !canUpvote ? (
                 <>
                   <FaBan className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-500 font-bold">{upvotes}</span>
+                  <span className="text-sm text-gray-600">Can't Upvote</span>
                 </>
               ) : (
                 <>
@@ -411,19 +457,19 @@ const IssueCard = ({ issue }) => {
                   >
                     {upvotes}
                   </span>
+                  <span className="text-sm text-gray-600">
+                    {hasUpvoted ? "Upvoted" : "Upvote"}
+                  </span>
                 </>
               )}
-              <span className="text-sm text-gray-600">
-                {!canUpvote ? "Can't Upvote" : hasUpvoted ? "Upvoted" : "Upvote"}
-              </span>
             </button>
 
-            {/* Tooltip for why can't upvote */}
-            {showTooltip && !canUpvote && upvoteMessage && (
+            {/* Tooltip: show reason or prompt to login */}
+            {showTooltip && (!isLoggedIn || !canUpvote) && (
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg whitespace-nowrap z-10">
                 <div className="flex items-center gap-1">
                   <FaInfoCircle className="w-3 h-3" />
-                  <span>{upvoteMessage}</span>
+                  <span>{isLoggedIn ? upvoteMessage : "Please login to upvote"}</span>
                 </div>
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
               </div>

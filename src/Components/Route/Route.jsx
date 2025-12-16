@@ -27,6 +27,7 @@ import PendingIssues from "../PendingIssues/PendingIssues";
 import AssignedIssue from "../AssignedIssue/AssignedIssue";
 import RejectIssue from "../../RejectIssue/RejectIssue";
 import ManageCitizens from "../ManageCitizens/ManageCitizens";
+import ProtectedRoute from "../../ProtectedRoute/ProtectedRoute";
 
 
 export const router = createBrowserRouter([
@@ -64,7 +65,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "issues/:id",
-        element: <IssueDetails />,
+      
+        element:
+        <ProtectedRoute> 
+          <IssueDetails />
+        </ProtectedRoute>,
         loader: ({ params }) => fetch(`http://localhost:3000/issues/${params.id}`)
       },
       {
