@@ -11,12 +11,7 @@ import {
   FaTools,
   FaCalendarAlt,
   FaMapMarkerAlt,
-  FaChevronDown,
-  FaChevronUp,
   FaPaperPlane,
-  FaEye,
-  FaEdit,
-  FaTrash,
   FaSyncAlt,
   FaListAlt,
   FaUsers,
@@ -27,7 +22,6 @@ import {
 } from 'react-icons/fa';
 
 const AssignStaff = () => {
-  // State management
   const [pendingIssues, setPendingIssues] = useState([]);
   const [inProgressIssues, setInProgressIssues] = useState([]);
   const [staffMembers, setStaffMembers] = useState([]);
@@ -49,14 +43,12 @@ const AssignStaff = () => {
     resolved: 0
   });
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchIssues();
     fetchStaffMembers();
     fetchIssueStats();
   }, []);
 
-  // Filter pending issues
   const filteredPendingIssues = pendingIssues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,14 +59,11 @@ const AssignStaff = () => {
     return matchesSearch && matchesCategory && matchesPriority;
   });
 
-  // Function to safely get staff name from assignedTo field
   const getStaffName = (assignedTo) => {
     if (!assignedTo) return 'Unassigned';
 
-    // If it's a string, return it
     if (typeof assignedTo === 'string') return assignedTo;
 
-    // If it's an object, extract the name
     if (typeof assignedTo === 'object' && assignedTo !== null) {
       return assignedTo.name || assignedTo.displayName || 'Staff Member';
     }
@@ -82,7 +71,6 @@ const AssignStaff = () => {
     return 'Unassigned';
   };
 
-  // API Functions
   const fetchIssues = async () => {
     try {
       setLoading(prev => ({ ...prev, issues: true }));
@@ -91,11 +79,8 @@ const AssignStaff = () => {
       if (response.data.success) {
         const allIssues = response.data.issues;
 
-        // Clean up assignedTo fields in issues
         const cleanIssues = allIssues.map(issue => {
           if (issue.assignedTo && typeof issue.assignedTo === 'object') {
-            console.log(`Cleaning assignedTo for issue ${issue._id}:`, issue.assignedTo);
-            // Extract just the name if it's an object
             return {
               ...issue,
               assignedTo: getStaffName(issue.assignedTo)
@@ -104,7 +89,6 @@ const AssignStaff = () => {
           return issue;
         });
 
-        // Separate issues by status
         const pending = cleanIssues.filter(issue =>
           issue.status === 'pending' || issue.status === 'Pending'
         );
@@ -116,7 +100,6 @@ const AssignStaff = () => {
         setInProgressIssues(inProgress);
       }
     } catch (error) {
-      console.error('Error fetching issues:', error);
       alert('Failed to load issues');
     } finally {
       setLoading(prev => ({ ...prev, issues: false }));
@@ -127,27 +110,20 @@ const AssignStaff = () => {
     try {
       setLoading(prev => ({ ...prev, staff: true }));
 
-      // Fetch all users from MongoDB
       const response = await axios.get('https://public-infra-report-server.vercel.app/users');
 
       if (response.data.success) {
-        // Filter users with role "staff"
         const staffUsers = response.data.users.filter(user =>
           user.role && user.role.toLowerCase() === 'staff'
         );
 
-        console.log('Staff users found:', staffUsers.length);
-
-        // Get current in-progress issues count for each staff
         const inProgressIssuesResponse = await axios.get('https://public-infra-report-server.vercel.app/issues');
         const allIssues = inProgressIssuesResponse.data.success ? inProgressIssuesResponse.data.issues : [];
 
         const staffWithDetails = staffUsers.map(staff => {
-          // Count issues assigned to this staff member
           const currentTasks = allIssues.filter(issue => {
             if (!issue.assignedTo) return false;
 
-            // Handle both string and object formats
             if (typeof issue.assignedTo === 'string') {
               return issue.assignedTo === (staff.displayName || staff.name || staff.email.split('@')[0]);
             } else if (typeof issue.assignedTo === 'object' && issue.assignedTo._id) {
@@ -156,8 +132,7 @@ const AssignStaff = () => {
             return false;
           }).length;
 
-          // Determine availability (you can customize this logic)
-          const maxTasks = 5; // Maximum tasks a staff can handle
+          const maxTasks = 5;
           const available = currentTasks < maxTasks;
 
           return {
@@ -175,12 +150,8 @@ const AssignStaff = () => {
         });
 
         setStaffMembers(staffWithDetails);
-        console.log('Processed staff members:', staffWithDetails);
       }
     } catch (error) {
-      console.error('Error fetching staff members:', error);
-
-      // Show error but continue with empty staff list
       alert('Note: Could not load staff members. Please ensure you have users with "staff" role in your database.');
       setStaffMembers([]);
     } finally {
@@ -197,7 +168,6 @@ const AssignStaff = () => {
         setStats(response.data.stats);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
     } finally {
       setLoading(prev => ({ ...prev, stats: false }));
     }
@@ -210,7 +180,6 @@ const AssignStaff = () => {
     }
 
     try {
-      // CRITICAL: Store staff data as a complete object
       const assignedToData = {
         id: selectedStaff._id || selectedStaff.email,
         name: selectedStaff.name,
@@ -220,9 +189,6 @@ const AssignStaff = () => {
         assignedBy: 'Admin'
       };
 
-      console.log('📝 Assigning staff object:', assignedToData);
-
-      // Use the /assign endpoint instead of direct patch
       const response = await axios.post(
         `https://public-infra-report-server.vercel.app/issues/${selectedIssue._id}/assign`,
         {
@@ -233,14 +199,11 @@ const AssignStaff = () => {
       );
 
       if (response.data.success) {
-        console.log('✅ Assignment successful:', response.data);
-
-        // Refresh the issues list
         fetchIssues();
         fetchStaffMembers();
         fetchIssueStats();
 
-        alert(`✅ Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
+        alert(`Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
         setShowAssignModal(false);
         setSelectedIssue(null);
         setSelectedStaff(null);
@@ -249,12 +212,7 @@ const AssignStaff = () => {
       }
 
     } catch (error) {
-      console.error('❌ Error assigning staff:', error);
-
-      // Fallback: try direct PATCH if the /assign endpoint fails
       try {
-        console.log('🔄 Trying direct PATCH as fallback...');
-
         const fallbackResponse = await axios.patch(
           `https://public-infra-report-server.vercel.app/issues/${selectedIssue._id}`,
           {
@@ -280,10 +238,8 @@ const AssignStaff = () => {
         );
 
         if (fallbackResponse.data.success) {
-          console.log('✅ Fallback assignment successful');
-          alert(`✅ Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
+          alert(`Successfully assigned "${selectedIssue.title}" to ${selectedStaff.name}`);
 
-          // Refresh data
           fetchIssues();
           fetchStaffMembers();
           fetchIssueStats();
@@ -293,101 +249,11 @@ const AssignStaff = () => {
           setSelectedStaff(null);
         }
       } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
-        alert('❌ Failed to assign staff. Please check console for details.');
+        alert('Failed to assign staff.');
       }
     }
   };
-  const handleUpdateProgress = async (issueId, progress) => {
-    try {
-      const response = await axios.patch(
-        `https://public-infra-report-server.vercel.app/issues/${issueId}`,
-        {
-          progress: progress,
-          timeline: [
-            {
-              status: 'in progress',
-              message: `Progress updated to ${progress}%`,
-              updatedBy: 'Staff',
-              updatedAt: new Date().toISOString()
-            }
-          ]
-        }
-      );
 
-      if (response.data.success) {
-        // Update local state
-        const updatedIssues = inProgressIssues.map(issue =>
-          issue._id === issueId ? { ...issue, progress: progress } : issue
-        );
-        setInProgressIssues(updatedIssues);
-      }
-    } catch (error) {
-      console.error('Error updating progress:', error);
-      alert('Failed to update progress');
-    }
-  };
-
-  const handleMarkComplete = async (issueId) => {
-    try {
-      const issue = inProgressIssues.find(i => i._id === issueId);
-
-      const response = await axios.patch(
-        `https://public-infra-report-server.vercel.app/issues/${issueId}`,
-        {
-          status: 'resolved',
-          progress: 100,
-          resolvedAt: new Date().toISOString(),
-          timeline: [
-            ...(issue.timeline || []),
-            {
-              status: 'resolved',
-              message: 'Issue marked as completed',
-              updatedBy: 'Staff',
-              updatedAt: new Date().toISOString()
-            }
-          ]
-        }
-      );
-
-      if (response.data.success) {
-        // Update staff current tasks count
-        if (issue.assignedTo) {
-          const staffName = getStaffName(issue.assignedTo);
-          const staff = staffMembers.find(s => s.name === staffName);
-          if (staff) {
-            const updatedStaff = staffMembers.map(s =>
-              s._id === staff._id
-                ? {
-                  ...s,
-                  currentTasks: Math.max(0, s.currentTasks - 1),
-                  available: (s.currentTasks - 1) < s.maxTasks
-                }
-                : s
-            );
-            setStaffMembers(updatedStaff);
-          }
-        }
-
-        // Remove from in-progress
-        setInProgressIssues(inProgressIssues.filter(i => i._id !== issueId));
-
-        // Update stats
-        setStats(prev => ({
-          ...prev,
-          inProgress: prev.inProgress - 1,
-          resolved: prev.resolved + 1
-        }));
-
-        alert(`Issue "${issue.title}" marked as completed`);
-      }
-    } catch (error) {
-      console.error('Error marking complete:', error);
-      alert('Failed to mark issue as complete');
-    }
-  };
-
-  // Helper Functions
   const getPriorityBadge = (priority) => {
     const priorityMap = {
       critical: 'bg-red-100 text-red-800 border border-red-200',
@@ -454,7 +320,6 @@ const AssignStaff = () => {
     return ['all', ...Array.from(priorities)];
   };
 
-  // Staff availability helper
   const getAvailabilityStatus = (staff) => {
     if (staff.currentTasks >= staff.maxTasks) {
       return { text: 'Fully Booked', color: 'text-red-600', bg: 'bg-red-100' };
@@ -465,7 +330,6 @@ const AssignStaff = () => {
     }
   };
 
-  // Loading State
   if (loading.issues && loading.staff) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -722,7 +586,7 @@ const AssignStaff = () => {
 
           {/* Right Column - In Progress Issues & Staff */}
           <div className="space-y-8">
-            {/* In Progress Issues */}
+            {/* In Progress Issues - View Only */}
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <div className="bg-blue-50 border-b border-blue-200 p-6">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -730,7 +594,7 @@ const AssignStaff = () => {
                   Issues In Progress ({inProgressIssues.length})
                 </h2>
                 <p className="text-gray-600 text-sm mt-1">
-                  Issues currently being worked on
+                  Issues currently being worked on by staff
                 </p>
               </div>
 
@@ -762,7 +626,6 @@ const AssignStaff = () => {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center gap-2 text-gray-500">
                             <FaUser className="w-4 h-4" />
-                            {/* FIXED: Use getStaffName to safely display assigned staff */}
                             <span>Assigned to: {getStaffName(issue.assignedTo)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-gray-500">
@@ -770,22 +633,6 @@ const AssignStaff = () => {
                             <span>Since: {formatDate(issue.assignedDate)}</span>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateProgress(issue._id, Math.min(100, (issue.progress || 0) + 25))}
-                          className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm transition-colors"
-                          disabled={(issue.progress || 0) >= 100}
-                        >
-                          Update Progress
-                        </button>
-                        <button
-                          onClick={() => handleMarkComplete(issue._id)}
-                          className="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm transition-colors"
-                        >
-                          Mark Complete
-                        </button>
                       </div>
                     </div>
                   ))
@@ -872,16 +719,13 @@ const AssignStaff = () => {
       {/* Assign Staff Modal */}
       {showAssignModal && selectedIssue && (
         <>
-          {/* Background overlay */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowAssignModal(false)}
           />
 
-          {/* Modal container */}
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-              {/* Sticky header */}
               <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold text-gray-900">Assign Staff to Issue</h3>
@@ -894,9 +738,7 @@ const AssignStaff = () => {
                 </div>
               </div>
 
-              {/* Scrollable content area */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-                {/* Issue Details */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h4 className="font-semibold text-gray-800 mb-3">Issue Details</h4>
                   <div className="space-y-2">
@@ -910,7 +752,6 @@ const AssignStaff = () => {
                   </div>
                 </div>
 
-                {/* Staff Selection */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-gray-800 mb-3">Select Staff Member</h4>
 
@@ -962,7 +803,6 @@ const AssignStaff = () => {
                           })}
                       </div>
 
-                      {/* Fully booked staff */}
                       {staffMembers.filter(staff => staff.currentTasks >= staff.maxTasks).length > 0 && (
                         <div className="mt-4">
                           <h5 className="text-sm font-medium text-gray-700 mb-2">Fully Booked Staff</h5>
@@ -998,7 +838,6 @@ const AssignStaff = () => {
                   )}
                 </div>
 
-                {/* Selected Staff Preview */}
                 {selectedStaff && (
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <h4 className="font-semibold text-blue-800 mb-2">Selected Staff</h4>
@@ -1016,7 +855,6 @@ const AssignStaff = () => {
                   </div>
                 )}
 
-                {/* Action Buttons - sticky bottom */}
                 <div className="sticky bottom-0 bg-white pt-4 pb-2">
                   <div className="flex justify-end gap-3">
                     <button

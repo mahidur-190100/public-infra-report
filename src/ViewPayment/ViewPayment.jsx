@@ -76,15 +76,11 @@ const ViewPayment = () => {
     setLoading(true);
     setError('');
     try {
-      // Fetch regular payments (subscriptions)
       const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments');
-      
-      // Fetch boost payments
       const boostResponse = await axios.get('https://public-infra-report-server.vercel.app/boost-payments');
       
       let allPayments = [];
       
-      // Process regular payments
       if (paymentsResponse.data.success && Array.isArray(paymentsResponse.data.payments)) {
         const regularPayments = paymentsResponse.data.payments.map(payment => ({
           ...payment,
@@ -94,7 +90,6 @@ const ViewPayment = () => {
           boostType: null,
           issueTitle: null,
           issueId: null,
-          // Ensure consistent field names
           _id: payment._id || payment.id,
           transactionId: payment.transactionId || `SUB-${payment._id?.substring(0, 8) || Date.now()}`,
           invoiceNumber: payment.invoiceNumber || `INV-${payment._id?.substring(0, 8) || Date.now()}`,
@@ -106,18 +101,14 @@ const ViewPayment = () => {
           paymentDate: payment.paymentDate || payment.createdAt || new Date().toISOString()
         }));
         allPayments = [...allPayments, ...regularPayments];
-      } else {
-        // Regular payments data format unexpected
       }
       
-      // Process boost payments
       if (boostResponse.data.success && Array.isArray(boostResponse.data.payments)) {
         const boostPayments = boostResponse.data.payments.map(payment => ({
           ...payment,
           paymentType: 'boost',
           typeLabel: payment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost',
           typeIcon: <FaRocket className="w-4 h-4 text-orange-500" />,
-          // Ensure consistent field names
           _id: payment._id || payment.id,
           transactionId: payment.transactionId || `BOOST-${payment._id?.substring(0, 8) || Date.now()}`,
           invoiceNumber: payment.invoiceNumber || payment.transactionId || `BOOST-INV-${payment._id?.substring(0, 8) || Date.now()}`,
@@ -127,26 +118,20 @@ const ViewPayment = () => {
           amount: Number(payment.amount) || 0,
           status: payment.status || 'completed',
           paymentDate: payment.paymentDate || payment.createdAt || new Date().toISOString(),
-          // Map boost-specific fields
           plan: payment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost',
           subscriptionStart: null,
           subscriptionEnd: null,
           paymentMethod: payment.paymentMethod || 'Card'
         }));
         allPayments = [...allPayments, ...boostPayments];
-      } else {
-        // Boost payments data format unexpected
       }
       
-      // Sort by date (newest first)
       allPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
-      
       setPayments(allPayments);
       
     } catch (error) {
       setError('Failed to load payments from database. Please check your server connection.');
       
-      // Try to load at least regular payments
       try {
         const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments');
         if (paymentsResponse.data.success && Array.isArray(paymentsResponse.data.payments)) {
@@ -182,7 +167,6 @@ const ViewPayment = () => {
         subscriptionRevenue: 0
       };
 
-      // Try to fetch regular payment stats
       try {
         const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments/stats');
         if (paymentsResponse.data.success) {
@@ -193,11 +177,8 @@ const ViewPayment = () => {
             subscriptionRevenue: paymentsResponse.data.stats.totalRevenue || 0
           };
         }
-      } catch (regularStatsError) {
-        // Regular stats not available
-      }
+      } catch (regularStatsError) {}
 
-      // Try to fetch boost payment stats
       try {
         const boostResponse = await axios.get('https://public-infra-report-server.vercel.app/boost-payments');
         if (boostResponse.data.success && Array.isArray(boostResponse.data.payments)) {
@@ -211,7 +192,6 @@ const ViewPayment = () => {
           statsData.completed = (statsData.completed || 0) + completedBoosts;
           statsData.totalRevenue = (statsData.totalRevenue || 0) + boostRevenue;
           
-          // Calculate today's boost payments
           const today = new Date().toDateString();
           const todayBoosts = boostPayments.filter(p => {
             const paymentDate = new Date(p.paymentDate || p.createdAt);
@@ -219,11 +199,8 @@ const ViewPayment = () => {
           });
           statsData.today = (statsData.today || 0) + todayBoosts.length;
         }
-      } catch (boostError) {
-        // Boost stats not available
-      }
+      } catch (boostError) {}
 
-      // If API calls failed, calculate from local payments data
       if (statsData.total === 0 && payments.length > 0) {
         const subscriptionPayments = payments.filter(p => p.paymentType === 'subscription');
         const boostPayments = payments.filter(p => p.paymentType === 'boost');
@@ -251,15 +228,12 @@ const ViewPayment = () => {
       
       setStats(statsData);
       
-    } catch (error) {
-      // Error fetching payment stats
-    }
+    } catch (error) {}
   };
 
   const filterAndSortPayments = () => {
     let filtered = [...payments];
 
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(payment =>
@@ -272,19 +246,16 @@ const ViewPayment = () => {
       );
     }
 
-    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(payment => 
         payment.status && payment.status.toLowerCase() === statusFilter.toLowerCase()
       );
     }
 
-    // Apply type filter
     if (typeFilter !== 'all') {
       filtered = filtered.filter(payment => payment.paymentType === typeFilter);
     }
 
-    // Apply date filter
     if (dateFilter !== 'all') {
       const now = new Date();
       filtered = filtered.filter(payment => {
@@ -305,24 +276,20 @@ const ViewPayment = () => {
       });
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
 
-      // Handle date fields
       if (sortField === 'paymentDate' || sortField === 'subscriptionStart' || sortField === 'subscriptionEnd') {
         aValue = new Date(aValue || 0);
         bValue = new Date(bValue || 0);
       }
 
-      // Handle numeric fields
       if (sortField === 'amount') {
         aValue = Number(aValue) || 0;
         bValue = Number(bValue) || 0;
       }
 
-      // Handle string fields (case insensitive)
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
@@ -423,7 +390,7 @@ const ViewPayment = () => {
     };
     
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClasses[statusInfo.color]}`}>
+      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${colorClasses[statusInfo.color]}`}>
         {statusInfo.label.toUpperCase()}
       </span>
     );
@@ -432,8 +399,8 @@ const ViewPayment = () => {
   const getPaymentTypeBadge = (paymentType, boostType) => {
     if (paymentType === 'boost') {
       return (
-        <div className="flex items-center gap-2">
-          <FaRocket className="w-4 h-4 text-orange-500" />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <FaRocket className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
           <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
             {boostType === 'priority_boost' ? 'PRIORITY BOOST' : 'ISSUE BOOST'}
           </span>
@@ -441,8 +408,8 @@ const ViewPayment = () => {
       );
     } else {
       return (
-        <div className="flex items-center gap-2">
-          <FaGem className="w-4 h-4 text-purple-500" />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <FaGem className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
           <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
             SUBSCRIPTION
           </span>
@@ -474,139 +441,139 @@ const ViewPayment = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <FaMoneyBill className="text-green-600" />
-                Payment Management
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <FaMoneyBill className="text-green-600 w-6 h-6 sm:w-8 sm:h-8" />
+                <span>Payment Management</span>
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">
                 Viewing {payments.length} payments from MongoDB
                 {stats.subscriptionPayments > 0 && (
-                  <span className="ml-2">
+                  <span className="ml-1 sm:ml-2">
                     (<span className="text-purple-600">{stats.subscriptionPayments} subscriptions</span>
-                    <span className="mx-2">•</span>
+                    <span className="mx-1 sm:mx-2">•</span>
                     <span className="text-orange-600">{stats.boostPayments} boosts</span>)
                   </span>
                 )}
               </p>
               {error && (
-                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700 flex items-center gap-2">
-                    <FaExclamationTriangle className="w-4 h-4" />
+                <div className="mt-2 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 flex items-center gap-2 text-xs sm:text-sm">
+                    <FaExclamationTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
                     {error}
                   </p>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={handleRefresh}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
               >
-                <FaSyncAlt className="w-4 h-4" />
-                Refresh All
+                <FaSyncAlt className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Refresh All</span>
               </button>
               <button
                 onClick={handleExportCSV}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1 sm:gap-2 transition-colors text-xs sm:text-sm"
               >
-                <FaDownload className="w-4 h-4" />
-                Export CSV
+                <FaDownload className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Export CSV</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow border border-blue-100">
+        <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow border border-blue-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Payments</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-                <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                <p className="text-xs sm:text-sm text-gray-500">Total Payments</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-3xl font-bold text-blue-600">{stats.total}</p>
+                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 sm:gap-2">
                   <span className="flex items-center gap-1">
-                    <FaGem className="w-3 h-3 text-purple-500" /> {stats.subscriptionPayments}
+                    <FaGem className="w-2 h-2 sm:w-3 sm:h-3 text-purple-500" /> <span className="hidden xs:inline">{stats.subscriptionPayments}</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <FaRocket className="w-3 h-3 text-orange-500" /> {stats.boostPayments}
-                  </span>
-                </div>
-              </div>
-              <FaMoneyBill className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow border border-green-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-                <p className="text-xs text-gray-500 mt-1">All successful payments</p>
-              </div>
-              <FaCheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow border border-purple-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Today's Payments</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.today}</p>
-                <p className="text-xs text-gray-500 mt-1">Completed today</p>
-              </div>
-              <FaCalendarAlt className="w-8 h-8 text-purple-500" />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl shadow border border-orange-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold text-orange-600">₹{stats.totalRevenue?.toLocaleString() || 0}</p>
-                <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                  <span className="flex items-center gap-1">
-                    <FaGem className="w-3 h-3 text-purple-500" /> 
-                    ₹{stats.subscriptionRevenue?.toLocaleString() || 0}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <FaRocket className="w-3 h-3 text-orange-500" /> 
-                    ₹{stats.boostRevenue?.toLocaleString() || 0}
+                    <FaRocket className="w-2 h-2 sm:w-3 sm:h-3 text-orange-500" /> <span className="hidden xs:inline">{stats.boostPayments}</span>
                   </span>
                 </div>
               </div>
-              <FaChartLine className="w-8 h-8 text-orange-500" />
+              <FaMoneyBill className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow border border-green-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Completed</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-3xl font-bold text-green-600">{stats.completed}</p>
+                <p className="text-xs text-gray-500 mt-1 hidden sm:block">All successful payments</p>
+              </div>
+              <FaCheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow border border-purple-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Today's Payments</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-3xl font-bold text-purple-600">{stats.today}</p>
+                <p className="text-xs text-gray-500 mt-1 hidden sm:block">Completed today</p>
+              </div>
+              <FaCalendarAlt className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white p-3 sm:p-4 md:p-6 rounded-xl shadow border border-orange-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-3xl font-bold text-orange-600">₹{stats.totalRevenue?.toLocaleString() || 0}</p>
+                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 sm:gap-2">
+                  <span className="flex items-center gap-1">
+                    <FaGem className="w-2 h-2 sm:w-3 sm:h-3 text-purple-500" /> 
+                    <span className="hidden xs:inline">₹{stats.subscriptionRevenue?.toLocaleString() || 0}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FaRocket className="w-2 h-2 sm:w-3 sm:h-3 text-orange-500" /> 
+                    <span className="hidden xs:inline">₹{stats.boostRevenue?.toLocaleString() || 0}</span>
+                  </span>
+                </div>
+              </div>
+              <FaChartLine className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow mb-6 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+        <div className="bg-white rounded-xl shadow mb-4 sm:mb-6 p-3 sm:p-4 md:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="relative lg:col-span-2">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="h-5 w-5 text-gray-400" />
+                <FaSearch className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search by name, email, issue, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="pl-10 pr-4 py-2 sm:py-3 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               >
                 <option value="all">All Status</option>
                 <option value="completed">Completed</option>
@@ -617,45 +584,45 @@ const ViewPayment = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Payment Type</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               >
                 <option value="all">All Types</option>
                 <option value="subscription">Subscriptions</option>
                 <option value="boost">Issue Boosts</option>
               </select>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">Last 7 Days</option>
-                <option value="month">Last 30 Days</option>
-              </select>
-            </div>
+          </div>
+          
+          <div className="mt-3 sm:mt-4">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Date Range</label>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+            </select>
           </div>
         </div>
 
-        {/* Payments Table */}
+        {/* Payments Table - Desktop View */}
         <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('invoiceNumber')}
                   >
                     <div className="flex items-center">
@@ -664,7 +631,7 @@ const ViewPayment = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('userName')}
                   >
                     <div className="flex items-center">
@@ -673,7 +640,7 @@ const ViewPayment = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('plan')}
                   >
                     <div className="flex items-center">
@@ -682,7 +649,7 @@ const ViewPayment = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('amount')}
                   >
                     <div className="flex items-center">
@@ -690,11 +657,11 @@ const ViewPayment = () => {
                       {renderSortIcon('amount')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => handleSort('paymentDate')}
                   >
                     <div className="flex items-center">
@@ -702,7 +669,7 @@ const ViewPayment = () => {
                       {renderSortIcon('paymentDate')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -711,10 +678,10 @@ const ViewPayment = () => {
                 {filteredPayments.length > 0 ? (
                   filteredPayments.map((payment) => (
                     <tr key={payment._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         {getPaymentTypeBadge(payment.paymentType, payment.boostType)}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {payment.invoiceNumber || payment.transactionId || 'N/A'}
                         </div>
@@ -727,16 +694,16 @@ const ViewPayment = () => {
                           ID: {payment._id?.substring(0, 8)}...
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                            <FaUser className="w-5 h-5 text-blue-600" />
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-blue-100 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                            <FaUser className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 truncate">
                               {payment.userName || payment.userEmail || 'Unknown User'}
                             </div>
-                            <div className="text-xs text-gray-500 truncate max-w-xs">
+                            <div className="text-xs text-gray-500 truncate">
                               {payment.userEmail || 'No email'}
                             </div>
                             <div className="text-xs text-gray-400">
@@ -745,13 +712,13 @@ const ViewPayment = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                         <div className="text-sm text-gray-900">
                           {payment.plan || 
                             (payment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost')}
                         </div>
                         {payment.issueTitle && (
-                          <div className="text-xs text-gray-500 truncate max-w-xs" title={payment.issueTitle}>
+                          <div className="text-xs text-gray-500 truncate max-w-[150px]" title={payment.issueTitle}>
                             <FaFire className="w-3 h-3 inline mr-1 text-orange-500" />
                             Issue: {payment.issueTitle}
                           </div>
@@ -768,7 +735,7 @@ const ViewPayment = () => {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900 flex items-center">
                           <FaRupeeSign className="w-3 h-3 mr-1" />
                           {(payment.amount || 0).toLocaleString()}
@@ -780,18 +747,18 @@ const ViewPayment = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         {getStatusBadge(payment.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(payment.paymentDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => handleViewDetails(payment)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center gap-1 transition-colors px-3 py-1 bg-blue-50 rounded-lg hover:bg-blue-100"
+                          className="text-blue-600 hover:text-blue-900 flex items-center gap-1 transition-colors px-2 py-1 sm:px-3 sm:py-1 bg-blue-50 rounded-lg hover:bg-blue-100 text-xs sm:text-sm"
                         >
-                          <FaEye className="w-4 h-4" />
+                          <FaEye className="w-3 h-3 sm:w-4 sm:h-4" />
                           View Details
                         </button>
                       </td>
@@ -799,12 +766,12 @@ const ViewPayment = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
-                      <div className="text-gray-400 mb-4">
-                        <FaMoneyBill className="w-12 h-12 mx-auto" />
+                    <td colSpan="8" className="px-4 sm:px-6 py-8 sm:py-12 text-center">
+                      <div className="text-gray-400 mb-3 sm:mb-4">
+                        <FaMoneyBill className="w-8 h-8 sm:w-12 sm:h-12 mx-auto" />
                       </div>
-                      <p className="text-gray-500 text-lg">No payments found</p>
-                      <p className="text-gray-400 text-sm mt-2">
+                      <p className="text-gray-500 text-sm sm:text-lg">No payments found</p>
+                      <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
                         {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || dateFilter !== 'all' 
                           ? 'Try changing your search or filter criteria'
                           : 'Payments will appear here once users make payments or boost issues'}
@@ -812,9 +779,9 @@ const ViewPayment = () => {
                       {payments.length === 0 && (
                         <button
                           onClick={handleRefresh}
-                          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto"
+                          className="mt-3 sm:mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 mx-auto text-xs sm:text-sm"
                         >
-                          <FaSyncAlt className="w-4 h-4" />
+                          <FaSyncAlt className="w-3 h-3 sm:w-4 sm:h-4" />
                           Refresh Data
                         </button>
                       )}
@@ -825,20 +792,124 @@ const ViewPayment = () => {
             </table>
           </div>
           
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden">
+            {filteredPayments.length > 0 ? (
+              filteredPayments.map((payment) => (
+                <div key={payment._id} className="border-b border-gray-200 p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      {getPaymentTypeBadge(payment.paymentType, payment.boostType)}
+                      <div className="text-xs text-gray-400 font-mono">
+                        ID: {payment._id?.substring(0, 6)}...
+                      </div>
+                    </div>
+                    {getStatusBadge(payment.status)}
+                  </div>
+                  
+                  <div className="mb-2">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {payment.invoiceNumber || payment.transactionId || 'N/A'}
+                    </div>
+                    {payment.transactionId && payment.transactionId !== payment.invoiceNumber && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {payment.transactionId}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <FaUser className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {payment.userName || payment.userEmail || 'Unknown User'}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {payment.userEmail || 'No email'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-2">
+                    <div className="text-sm text-gray-900">
+                      {payment.plan || 
+                        (payment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost')}
+                    </div>
+                    {payment.issueTitle && (
+                      <div className="text-xs text-gray-500 truncate" title={payment.issueTitle}>
+                        <FaFire className="w-3 h-3 inline mr-1 text-orange-500" />
+                        Issue: {payment.issueTitle}
+                      </div>
+                    )}
+                    {payment.subscriptionEnd && (
+                      <div className="text-xs text-gray-500">
+                        <FaCalendarAlt className="w-3 h-3 inline mr-1 text-purple-500" />
+                        Until: {formatDate(payment.subscriptionEnd)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+                    <div className="text-sm font-bold text-gray-900 flex items-center">
+                      <FaRupeeSign className="w-3 h-3 mr-1" />
+                      {(payment.amount || 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatDate(payment.paymentDate)}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => handleViewDetails(payment)}
+                      className="text-blue-600 hover:text-blue-900 flex items-center gap-1 transition-colors px-2 py-1.5 bg-blue-50 rounded-lg hover:bg-blue-100 text-xs sm:text-sm"
+                    >
+                      <FaEye className="w-3 h-3 sm:w-4 sm:h-4" />
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 sm:py-12 px-4">
+                <div className="text-gray-400 mb-3 sm:mb-4">
+                  <FaMoneyBill className="w-8 h-8 sm:w-12 sm:h-12 mx-auto" />
+                </div>
+                <p className="text-gray-500 text-sm sm:text-lg">No payments found</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-2">
+                  {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || dateFilter !== 'all' 
+                    ? 'Try changing your search or filter criteria'
+                    : 'Payments will appear here once users make payments or boost issues'}
+                </p>
+                {payments.length === 0 && (
+                  <button
+                    onClick={handleRefresh}
+                    className="mt-3 sm:mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 mx-auto text-xs sm:text-sm"
+                  >
+                    <FaSyncAlt className="w-3 h-3 sm:w-4 sm:h-4" />
+                    Refresh Data
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          
           {/* Summary */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-sm text-gray-500">
+          <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+              <div className="text-xs sm:text-sm text-gray-500">
                 Showing {filteredPayments.length} of {payments.length} payments
                 {typeFilter === 'all' && payments.length > 0 && (
-                  <span className="ml-4">
+                  <span className="ml-2 sm:ml-4">
                     <span className="text-purple-600">Subscriptions: {payments.filter(p => p.paymentType === 'subscription').length}</span>
-                    <span className="mx-2">•</span>
+                    <span className="mx-1 sm:mx-2">•</span>
                     <span className="text-orange-600">Boosts: {payments.filter(p => p.paymentType === 'boost').length}</span>
                   </span>
                 )}
               </div>
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-xs sm:text-sm font-medium text-gray-900">
                 Total Revenue: <span className="text-green-600">
                   ₹{(filteredPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)).toLocaleString()}
                 </span>
@@ -856,21 +927,21 @@ const ViewPayment = () => {
             onClick={() => setShowDetailsModal(false)}
           />
           
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-              <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200">
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-2xl max-h-[95vh] overflow-hidden mx-2 sm:mx-0">
+              <div className="sticky top-0 bg-white z-10 p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {selectedPayment.paymentType === 'boost' ? (
-                      <FaRocket className="w-6 h-6 text-orange-500" />
+                      <FaRocket className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                     ) : (
-                      <FaGem className="w-6 h-6 text-purple-500" />
+                      <FaGem className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
                     )}
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                         {selectedPayment.paymentType === 'boost' ? 'Boost Payment' : 'Subscription Payment'} Details
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">
                         {selectedPayment.paymentType === 'boost' ? 'Issue Priority Boost' : 'Premium Subscription'}
                       </p>
                     </div>
@@ -884,25 +955,25 @@ const ViewPayment = () => {
                 </div>
               </div>
               
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-80px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                   {/* Customer Info */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <FaUser className="w-4 h-4" /> Customer Information
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                      <FaUser className="w-3 h-3 sm:w-4 sm:h-4" /> Customer Information
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Name:</span>
-                        <span className="font-medium">{selectedPayment.userName || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.userName || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">{selectedPayment.userEmail || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.userEmail || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Phone:</span>
-                        <span className="font-medium">{selectedPayment.userPhone || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.userPhone || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Role:</span>
@@ -910,17 +981,17 @@ const ViewPayment = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">User ID:</span>
-                        <span className="font-medium text-sm truncate max-w-xs">{selectedPayment.userId || 'N/A'}</span>
+                        <span className="font-medium text-xs truncate max-w-[120px] sm:max-w-none">{selectedPayment.userId || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Payment Info */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <FaCreditCard className="w-4 h-4" /> Payment Information
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                      <FaCreditCard className="w-3 h-3 sm:w-4 sm:h-4" /> Payment Information
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Type:</span>
                         {selectedPayment.paymentType === 'boost' ? 
@@ -930,15 +1001,15 @@ const ViewPayment = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Invoice:</span>
-                        <span className="font-medium">{selectedPayment.invoiceNumber || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.invoiceNumber || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Transaction:</span>
-                        <span className="font-medium">{selectedPayment.transactionId || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.transactionId || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Plan/Boost:</span>
-                        <span className="font-medium">{selectedPayment.plan || (selectedPayment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost')}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-none">{selectedPayment.plan || (selectedPayment.boostType === 'priority_boost' ? 'Priority Boost' : 'Issue Boost')}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Method:</span>
@@ -958,18 +1029,18 @@ const ViewPayment = () => {
                 
                 {/* Boost-specific details */}
                 {selectedPayment.paymentType === 'boost' && (
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg mb-6 border border-orange-200">
-                    <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                      <FaFire className="w-4 h-4" /> Boost Details
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 border border-orange-200">
+                    <h4 className="font-semibold text-orange-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                      <FaFire className="w-3 h-3 sm:w-4 sm:h-4" /> Boost Details
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Issue Title:</span>
-                        <span className="font-medium truncate max-w-xs">{selectedPayment.issueTitle || 'N/A'}</span>
+                        <span className="font-medium truncate max-w-[150px] sm:max-w-none">{selectedPayment.issueTitle || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Issue ID:</span>
-                        <span className="font-medium font-mono text-sm">{selectedPayment.issueId || 'N/A'}</span>
+                        <span className="font-medium font-mono text-xs truncate max-w-[120px] sm:max-w-none">{selectedPayment.issueId || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Boost Type:</span>
@@ -980,7 +1051,7 @@ const ViewPayment = () => {
                       {selectedPayment.oldPriority && selectedPayment.newPriority && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Priority Change:</span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
                               {selectedPayment.oldPriority.toUpperCase()}
                             </span>
@@ -997,31 +1068,31 @@ const ViewPayment = () => {
                 
                 {/* Subscription Details (only for subscriptions) */}
                 {selectedPayment.paymentType === 'subscription' && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                      <FaCalendarAlt className="w-4 h-4" /> Subscription Details
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-lg mb-4 sm:mb-6">
+                    <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                      <FaCalendarAlt className="w-3 h-3 sm:w-4 sm:h-4" /> Subscription Details
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                       <div>
-                        <p className="text-sm text-gray-500">Payment Date</p>
-                        <p className="font-medium">{formatDate(selectedPayment.paymentDate)}</p>
+                        <p className="text-gray-500">Payment Date</p>
+                        <p className="font-medium truncate">{formatDate(selectedPayment.paymentDate)}</p>
                       </div>
                       {selectedPayment.subscriptionStart && (
                         <div>
-                          <p className="text-sm text-gray-500">Subscription Start</p>
-                          <p className="font-medium">{formatDate(selectedPayment.subscriptionStart)}</p>
+                          <p className="text-gray-500">Subscription Start</p>
+                          <p className="font-medium truncate">{formatDate(selectedPayment.subscriptionStart)}</p>
                         </div>
                       )}
                       {selectedPayment.subscriptionEnd && (
                         <div>
-                          <p className="text-sm text-gray-500">Subscription End</p>
-                          <p className="font-medium">{formatDate(selectedPayment.subscriptionEnd)}</p>
+                          <p className="text-gray-500">Subscription End</p>
+                          <p className="font-medium truncate">{formatDate(selectedPayment.subscriptionEnd)}</p>
                         </div>
                       )}
                     </div>
                     {selectedPayment.subscriptionEnd && (
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-700">
+                      <div className="mt-3 p-2 sm:p-3 bg-blue-50 rounded-lg">
+                        <p className="text-xs sm:text-sm text-blue-700">
                           Subscription active until {formatDate(selectedPayment.subscriptionEnd)}
                         </p>
                       </div>
@@ -1030,14 +1101,14 @@ const ViewPayment = () => {
                 )}
                 
                 {/* MongoDB Document Info */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    <FaDatabase className="w-4 h-4" /> MongoDB Information
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                    <FaDatabase className="w-3 h-3 sm:w-4 sm:h-4" /> MongoDB Information
                   </h4>
-                  <div className="space-y-2">
+                  <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Document ID:</span>
-                      <span className="font-mono text-sm">{selectedPayment._id}</span>
+                      <span className="font-mono text-xs truncate max-w-[120px] sm:max-w-none">{selectedPayment._id}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Collection:</span>
@@ -1047,22 +1118,22 @@ const ViewPayment = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Created:</span>
-                      <span className="text-sm">{formatDate(selectedPayment.createdAt)}</span>
+                      <span className="text-xs truncate">{formatDate(selectedPayment.createdAt)}</span>
                     </div>
                     {selectedPayment.updatedAt && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Updated:</span>
-                        <span className="text-sm">{formatDate(selectedPayment.updatedAt)}</span>
+                        <span className="text-xs truncate">{formatDate(selectedPayment.updatedAt)}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 
                 {/* Security Info */}
-                <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="mb-4 sm:mb-6 p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-start">
-                    <FaShieldAlt className="w-4 h-4 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-green-700">
+                    <FaShieldAlt className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mt-0.5 mr-1 sm:mr-2 flex-shrink-0" />
+                    <p className="text-xs sm:text-sm text-green-700">
                       This payment information is securely stored in MongoDB and is encrypted. 
                       Card details are tokenized and never stored in plain text.
                     </p>
@@ -1070,11 +1141,11 @@ const ViewPayment = () => {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
-                  <div className="flex justify-end gap-3">
+                <div className="sticky bottom-0 bg-white pt-3 pb-1 sm:pt-4 sm:pb-2 border-t border-gray-200">
+                  <div className="flex justify-end gap-2 sm:gap-3">
                     <button
                       onClick={() => setShowDetailsModal(false)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm"
                     >
                       Close
                     </button>

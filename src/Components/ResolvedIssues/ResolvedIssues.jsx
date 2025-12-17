@@ -783,7 +783,7 @@ const ResolvedIssues = () => {
         <div className="mt-6 bg-white rounded-xl shadow p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">📊 Performance Summary</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Performance Summary</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <p>• Total Issues Resolved: {stats.total}</p>
                 <p>• Average Resolution Time: {stats.averageResolutionTime} days</p>
@@ -793,7 +793,7 @@ const ResolvedIssues = () => {
             </div>
             
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">🏆 Recognition</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Recognition</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <p>• Performance Rating: <span className="font-bold text-green-600">{stats.rating}/5</span></p>
                 <p>• Community Impact: {resolvedIssues.reduce((sum, issue) => sum + (issue.upvotes || 0), 0)} total upvotes</p>
@@ -813,10 +813,9 @@ const ResolvedIssues = () => {
             </div>
             
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">🚀 Quick Actions</h3>
+              <h3 className="font-semibold text-gray-900 mb-2"> Quick Actions</h3>
               <div className="space-y-3">
                 <button
-                  onClick={() => navigate('/dashboard/staff/assigned')}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm text-center"
                 >
                   View Assigned Issues
