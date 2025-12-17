@@ -1,42 +1,42 @@
-// Login.jsx - Updated version with proper block handling
-import React from 'react'
+// Login.jsx - Updated version with hide/show password functionality
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../../Hooks/useAuth';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast'; // Add toast
+import { toast, Toaster } from 'react-hot-toast';
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons from react-icons
+import { motion } from 'framer-motion'; // Import Framer Motion
 
 const Login = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
     const { loginUser, signInWithGoogle, signOutUser } = useAuth();
     const navigate = useNavigate();
+    
+    // State for password visibility and icon
+    const [showPassword, setShowPassword] = useState(false);
+    const [password, setPassword] = useState('');
+
+    // Function to toggle password visibility with animation
+    const handleTogglePassword = () => {
+        setShowPassword(!showPassword);
+    };
 
     const handleLogin = (data) => {
-        console.log("=== LOGIN DEBUG START ===");
-        console.log("Login attempt with:", data.email);
-        
         loginUser(data.email, data.password)
             .then(result => {
-                console.log("✅ Firebase login successful:", result.user.email);
-                
-                // ✅ First, check if this user exists in MongoDB
-                console.log(`🔍 Checking backend for user: ${result.user.email}`);
+                // First, check if this user exists in MongoDB
                 axios.get(`https://public-infra-report-server.vercel.app/users/${result.user.email}`)
                     .then(response => {
-                        console.log("✅ Backend response:", response.data);
-                        
                         if (response.data.success) {
                             const userData = response.data.user;
-                            console.log("✅ User data from MongoDB:", userData);
                             
-                            // ✅ CHECK IF USER IS BLOCKED - IMPROVED
+                            // CHECK IF USER IS BLOCKED
                             if (userData.blocked === true) {
-                                console.log('🚫 USER IS BLOCKED:', userData.email);
-                                
                                 // Show toast notification
                                 toast.error(
                                     <div>
-                                        <div className="font-bold">🚫 Account Blocked</div>
+                                        <div className="font-bold">Account Blocked</div>
                                         <div className="text-sm">Your account has been blocked by administrator.</div>
                                         {userData.blockReason && (
                                             <div className="text-xs mt-1">Reason: {userData.blockReason}</div>
@@ -55,26 +55,19 @@ const Login = () => {
                                 // Sign out from Firebase immediately
                                 signOutUser()
                                     .then(() => {
-                                        console.log('✅ Signed out blocked user from Firebase');
-                                        
                                         // Clear any existing storage
                                         localStorage.removeItem('user');
                                         localStorage.removeItem('admin');
                                         localStorage.removeItem('staff');
-                                        
-                                        // Don't navigate anywhere, stay on login page
                                     })
                                     .catch(signOutError => {
-                                        console.error('❌ Error signing out:', signOutError);
                                         toast.error('Failed to sign out. Please refresh the page.');
                                     });
                                 
                                 return; // Stop further execution
                             }
                             
-                            console.log("✅ User role:", userData.role);
-                            
-                            // ✅ DETERMINE USER TYPE AND REDIRECT
+                            // DETERMINE USER TYPE AND REDIRECT
                             const userRole = userData.role || 'user';
                             
                             // Prepare user data object
@@ -100,58 +93,41 @@ const Login = () => {
                             // Save to appropriate localStorage and navigate based on role
                             switch(userRole) {
                                 case 'admin':
-                                    // console.log('🎯 ADMIN DETECTED FROM BACKEND:', userData.email);
                                     userSessionData.isAdmin = true;
                                     localStorage.setItem('admin', JSON.stringify(userSessionData));
-                                    console.log(' Admin saved to localStorage');
-                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
-                                        icon: '👑'
-                                    });
+                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                                     
                                 case 'staff':
-                                    console.log('👔 STAFF DETECTED FROM BACKEND:', userData.email);
                                     userSessionData.isStaff = true;
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
-                                    console.log('✅ Staff saved to localStorage');
-                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
-                                        icon: '👨‍💼'
-                                    });
+                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                                     
                                 case 'user':
                                 default:
-                                    console.log('👤 REGULAR USER DETECTED:', userData.email);
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
-                                    console.log('✅ User saved to localStorage');
-                                    toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                        icon: '👋'
-                                    });
+                                    toast.success(`Welcome ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                             }
                         }
                     })
                     .catch(error => {
-                        console.log("❌ User not found in backend:", error.message);
-                        console.log("Creating as regular user...");
-                        
                         // User doesn't exist in backend - create as regular user
                         const newUser = {
                             email: result.user.email,
                             displayName: result.user.displayName || result.user.email.split('@')[0],
                             photoURL: result.user.photoURL,
                             uid: result.user.uid,
-                            role: 'user', // Default role
-                            blocked: false, // Default not blocked
+                            role: 'user',
+                            blocked: false,
                             isPremium: false,
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
                         };
-                        
-                        console.log("Creating new user in backend:", newUser);
                         
                         // Save to backend
                         axios.post('https://public-infra-report-server.vercel.app/users', newUser)
@@ -167,17 +143,13 @@ const Login = () => {
                                     lastLogin: new Date().toISOString()
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
-                                console.log('✅ New regular user created and saved to localStorage');
                                 
-                                toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                    icon: '🎉'
-                                });
+                                toast.success(`Welcome ${userSessionData.displayName}!`);
                                 
                                 // Navigate to regular user dashboard
                                 navigate('/');
                             })
                             .catch(backendError => {
-                                console.error('❌ Error creating user in backend:', backendError);
                                 // Still save to localStorage and navigate
                                 localStorage.removeItem('user');
                                 localStorage.removeItem('admin');
@@ -189,59 +161,41 @@ const Login = () => {
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
                                 
-                                toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                    icon: '👋'
-                                });
+                                toast.success(`Welcome ${userSessionData.displayName}!`);
                                 
                                 navigate('/');
                             });
                     });
             })
             .catch(error => {
-                console.log("❌ Firebase login error:", error.message);
-                
                 // Show appropriate error messages
                 if (error.code === 'auth/wrong-password') {
-                    toast.error('Invalid password. Please try again.', {
-                        icon: '🔒'
-                    });
+                    toast.error('Invalid password. Please try again.');
                 } else if (error.code === 'auth/user-not-found') {
-                    toast.error('No account found with this email.', {
-                        icon: '📧'
-                    });
+                    toast.error('No account found with this email.');
                 } else if (error.code === 'auth/too-many-requests') {
-                    toast.error('Too many failed attempts. Try again later.', {
-                        icon: '⏱️'
-                    });
+                    toast.error('Too many failed attempts. Try again later.');
                 } else {
-                    toast.error('Login failed: ' + error.message, {
-                        icon: '❌'
-                    });
+                    toast.error('Login failed: ' + error.message);
                 }
             });
-        
-        console.log("=== LOGIN DEBUG END ===");
     }
 
     const handleSignInWithGoogle = () => {
         signInWithGoogle()
             .then(result => {
-                console.log("Google login successful:", result.user);
-                
-                // ✅ Check if this Google user exists
+                // Check if this Google user exists
                 axios.get(`https://public-infra-report-server.vercel.app/users/${result.user.email}`)
                     .then(response => {
                         if (response.data.success) {
                             const userData = response.data.user;
                             
-                            // ✅ CHECK IF USER IS BLOCKED
+                            // CHECK IF USER IS BLOCKED
                             if (userData.blocked === true) {
-                                console.log('🚫 USER IS BLOCKED:', userData.email);
-                                
                                 // Show toast notification
                                 toast.error(
                                     <div>
-                                        <div className="font-bold">🚫 Account Blocked</div>
+                                        <div className="font-bold">Account Blocked</div>
                                         <div className="text-sm">Your account has been blocked by administrator.</div>
                                         {userData.blockReason && (
                                             <div className="text-xs mt-1">Reason: {userData.blockReason}</div>
@@ -260,22 +214,19 @@ const Login = () => {
                                 // Sign out from Firebase
                                 signOutUser()
                                     .then(() => {
-                                        console.log('✅ Signed out blocked user from Firebase');
-                                        
                                         // Clear any existing storage
                                         localStorage.removeItem('user');
                                         localStorage.removeItem('admin');
                                         localStorage.removeItem('staff');
                                     })
                                     .catch(signOutError => {
-                                        console.error('❌ Error signing out:', signOutError);
                                         toast.error('Failed to sign out. Please refresh the page.');
                                     });
                                 
                                 return; // Stop further execution
                             }
                             
-                            // ✅ DETERMINE USER TYPE AND REDIRECT
+                            // DETERMINE USER TYPE AND REDIRECT
                             const userRole = userData.role || 'user';
                             
                             // Prepare user data object
@@ -302,32 +253,23 @@ const Login = () => {
                             // Save and navigate based on role
                             switch(userRole) {
                                 case 'admin':
-                                    console.log('🎯 ADMIN DETECTED (Google):', userData.email);
                                     userSessionData.isAdmin = true;
                                     localStorage.setItem('admin', JSON.stringify(userSessionData));
-                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
-                                        icon: '👑'
-                                    });
+                                    toast.success(`Welcome Admin ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                                     
                                 case 'staff':
-                                    console.log('👔 STAFF DETECTED (Google):', userData.email);
                                     userSessionData.isStaff = true;
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
-                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`, {
-                                        icon: '👨‍💼'
-                                    });
+                                    toast.success(`Welcome Staff ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                                     
                                 case 'user':
                                 default:
-                                    console.log('👤 REGULAR USER (Google):', userData.email);
                                     localStorage.setItem('user', JSON.stringify(userSessionData));
-                                    toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                        icon: '👋'
-                                    });
+                                    toast.success(`Welcome ${userSessionData.displayName}!`);
                                     navigate('/');
                                     break;
                             }
@@ -360,9 +302,7 @@ const Login = () => {
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
                                 
-                                toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                    icon: '🎉'
-                                });
+                                toast.success(`Welcome ${userSessionData.displayName}!`);
                                 
                                 navigate('/');
                             })
@@ -377,19 +317,14 @@ const Login = () => {
                                 };
                                 localStorage.setItem('user', JSON.stringify(userSessionData));
                                 
-                                toast.success(`Welcome ${userSessionData.displayName}!`, {
-                                    icon: '👋'
-                                });
+                                toast.success(`Welcome ${userSessionData.displayName}!`);
                                 
                                 navigate('/');
                             });
                     });
             })
             .catch(error => {
-                console.log("Google login error:", error.message);
-                toast.error('Google login failed: ' + error.message, {
-                    icon: '❌'
-                });
+                toast.error('Google login failed: ' + error.message);
             });
     }
 
@@ -426,16 +361,10 @@ const Login = () => {
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-gray-800 mb-2">Public Infrastructure Report</h1>
                             <p className="text-gray-600">Login to report and track infrastructure issues</p>
-                            <div className="mt-4 flex justify-center gap-3">
-                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">User</span>
-                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Staff</span>
-                                <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Admin</span>
-                            </div>
                         </div>
 
                         <form className="space-y-4" onSubmit={handleSubmit(handleLogin)}>
                             <fieldset className="fieldset">
-                                {/* Email */}
                                 <label className="label">Email</label>
                                 <input 
                                     type="email" 
@@ -445,14 +374,51 @@ const Login = () => {
                                 />
                                 {errors.email?.type === 'required' && <span className="text-red-600">Email is required</span>}
                                 
-                                {/* Password */}
                                 <label className="label">Password</label>
-                                <input 
-                                    type="password" 
-                                    {...register('password', { required: true, minLength: 8 })} 
-                                    className="input" 
-                                    placeholder="Password" 
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showPassword ? "text" : "password"}
+                                        {...register('password', { 
+                                            required: true, 
+                                            minLength: 8,
+                                            onChange: (e) => setPassword(e.target.value)
+                                        })} 
+                                        className="input w-full pr-10" 
+                                        placeholder="Password" 
+                                        value={password}
+                                    />
+                                    <motion.button
+                                        type="button"
+                                        onClick={handleTogglePassword}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        whileTap={{ scale: 0.9 }}
+                                        initial={{ opacity: 1 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        {showPassword ? (
+                                            <motion.div
+                                                key="eye-slash"
+                                                initial={{ opacity: 0, rotate: -90 }}
+                                                animate={{ opacity: 1, rotate: 0 }}
+                                                exit={{ opacity: 0, rotate: 90 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <FaEyeSlash className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="eye"
+                                                initial={{ opacity: 0, rotate: -90 }}
+                                                animate={{ opacity: 1, rotate: 0 }}
+                                                exit={{ opacity: 0, rotate: 90 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <FaEye className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                                            </motion.div>
+                                        )}
+                                    </motion.button>
+                                </div>
                                 {errors.password?.type === 'minLength' && <span className="text-red-600">Password must be 8 characters</span>}
                                 
                                 <div className="text-right">

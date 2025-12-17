@@ -641,19 +641,6 @@ const SubmitIssue = () => {
           </p>
         </div>
 
-        {/* Data Storage Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <FaExclamationCircle className="text-blue-600 mt-1 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-blue-800">Data Storage</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                Your issue will be saved in our Database.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Limit Info */}
         {renderLimitInfo()}
       </div>
