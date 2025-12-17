@@ -100,10 +100,10 @@ const Login = () => {
                             // Save to appropriate localStorage and navigate based on role
                             switch(userRole) {
                                 case 'admin':
-                                    console.log('🎯 ADMIN DETECTED FROM BACKEND:', userData.email);
+                                    // console.log('🎯 ADMIN DETECTED FROM BACKEND:', userData.email);
                                     userSessionData.isAdmin = true;
                                     localStorage.setItem('admin', JSON.stringify(userSessionData));
-                                    console.log('✅ Admin saved to localStorage');
+                                    console.log(' Admin saved to localStorage');
                                     toast.success(`Welcome Admin ${userSessionData.displayName}!`, {
                                         icon: '👑'
                                     });

@@ -76,15 +76,11 @@ const ViewPayment = () => {
     setLoading(true);
     setError('');
     try {
-      console.log('🔍 Fetching all payments...');
-      
       // Fetch regular payments (subscriptions)
       const paymentsResponse = await axios.get('https://public-infra-report-server.vercel.app/payments');
-      console.log('✅ Regular payments response:', paymentsResponse.data);
       
       // Fetch boost payments
       const boostResponse = await axios.get('https://public-infra-report-server.vercel.app/boost-payments');
-      console.log('🚀 Boost payments response:', boostResponse.data);
       
       let allPayments = [];
       
@@ -110,9 +106,8 @@ const ViewPayment = () => {
           paymentDate: payment.paymentDate || payment.createdAt || new Date().toISOString()
         }));
         allPayments = [...allPayments, ...regularPayments];
-        console.log(`📊 Loaded ${regularPayments.length} subscription payments`);
       } else {
-        console.warn('⚠️ Regular payments data format unexpected:', paymentsResponse.data);
+        // Regular payments data format unexpected
       }
       
       // Process boost payments
@@ -139,19 +134,16 @@ const ViewPayment = () => {
           paymentMethod: payment.paymentMethod || 'Card'
         }));
         allPayments = [...allPayments, ...boostPayments];
-        console.log(`🚀 Loaded ${boostPayments.length} boost payments`);
       } else {
-        console.warn('⚠️ Boost payments data format unexpected:', boostResponse.data);
+        // Boost payments data format unexpected
       }
       
       // Sort by date (newest first)
       allPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
       
       setPayments(allPayments);
-      console.log(`💰 Total payments loaded: ${allPayments.length}`);
       
     } catch (error) {
-      console.error('❌ Error fetching payments:', error);
       setError('Failed to load payments from database. Please check your server connection.');
       
       // Try to load at least regular payments
@@ -168,10 +160,8 @@ const ViewPayment = () => {
             issueId: null
           }));
           setPayments(regularPayments);
-          console.log(`📊 Loaded ${regularPayments.length} payments (boost API failed)`);
         }
       } catch (error2) {
-        console.error('Failed to load any payments:', error2);
         setPayments([]);
       }
     } finally {
@@ -204,7 +194,7 @@ const ViewPayment = () => {
           };
         }
       } catch (regularStatsError) {
-        console.log('Regular stats not available:', regularStatsError.message);
+        // Regular stats not available
       }
 
       // Try to fetch boost payment stats
@@ -230,7 +220,7 @@ const ViewPayment = () => {
           statsData.today = (statsData.today || 0) + todayBoosts.length;
         }
       } catch (boostError) {
-        console.log('Boost stats not available:', boostError.message);
+        // Boost stats not available
       }
 
       // If API calls failed, calculate from local payments data
@@ -262,7 +252,7 @@ const ViewPayment = () => {
       setStats(statsData);
       
     } catch (error) {
-      console.error('Error fetching payment stats:', error);
+      // Error fetching payment stats
     }
   };
 
