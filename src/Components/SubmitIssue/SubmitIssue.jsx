@@ -415,7 +415,7 @@ const SubmitIssue = () => {
         }]
       };
 
-      console.log('Submitting to MongoDB with user info:', issueData);
+      // console.log('Submitting to MongoDB with user info:', issueData);
 
       // Step 3: Send to backend
       const response = await axios.post('https://public-infra-report-server.vercel.app/issues', issueData, {

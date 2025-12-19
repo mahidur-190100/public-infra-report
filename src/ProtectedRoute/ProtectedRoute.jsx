@@ -1,4 +1,4 @@
-// Components/ProtectedRoute.jsx
+
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
@@ -42,14 +42,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
       }
       
       if (!email) {
-        console.log('❌ No user session found');
         setIsValid(false);
         setLoading(false);
         return;
       }
       
       try {
-        // Validate with server
         const response = await axios.post('https://public-infra-report-server.vercel.app/validate-user', {
           email: email,
           uid: uid
@@ -58,7 +56,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
         if (response.data.success && response.data.valid === true) {
           // Check if admin access is required
           if (requireAdmin && response.data.user.role !== 'admin') {
-            console.log('❌ Admin access required');
             setIsValid(false);
             setUserRole('user');
           } else {
@@ -68,15 +65,13 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
         } else {
           // User is blocked or invalid
           if (response.data.blocked) {
-            console.log('🚫 User is blocked');
-            // Clear localStorage
             localStorage.removeItem('admin');
             localStorage.removeItem('user');
           }
           setIsValid(false);
         }
       } catch (error) {
-        console.error('❌ Error validating session:', error);
+        console.error('Error validating session:', error);
         setIsValid(false);
       } finally {
         setLoading(false);

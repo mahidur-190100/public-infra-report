@@ -10,26 +10,29 @@ This system improves transparency, reduces response time, and makes municipal se
 
 > ⚠️ For testing purposes only
 
-* **Admin Email:** [admin@example.com](mailto:admin@example.com)
+* **Admin Email:** [admin@example.com]
 * **Admin Password:** Admin!123
 
 ---
 
 ## 👤 Demo User Credentials
 
+### 🧍 User Account
+
+* **Email:** [user1@exaple.com]
+* **Password:** User!111
+
+
+> This citizen is a free user and has already reported 2 issues.
+
 ### 🧑‍🔧 Staff Account
 
-* **Email:** [staff@example.com](mailto:staff@example.com)
-* **Password:** Staff@123
+* **Email:** [staff@example.com]
+* **Password:** Staff!111
 
 > This staff already has assigned issues and can update issue statuses.
 
-### 🧍 Citizen Account (Free User)
 
-* **Email:** [citizen@example.com](mailto:citizen@example.com)
-* **Password:** Citizen@123
-
-> This citizen is a free user and has already reported 2 issues.
 
 ---
 

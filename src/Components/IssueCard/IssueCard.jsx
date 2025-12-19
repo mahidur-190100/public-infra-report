@@ -94,7 +94,7 @@ const IssueCard = ({ issue }) => {
     const checkUpvotePermissions = async () => {
       // Not logged in: keep button clickable (to redirect), just show hint
       if (!isLoggedIn) {
-        setCanUpvote(true); // keep clickable to navigate to /login
+        setCanUpvote(true); 
         setUpvoteMessage("Please login to upvote");
         setHasUpvoted(false);
         return;

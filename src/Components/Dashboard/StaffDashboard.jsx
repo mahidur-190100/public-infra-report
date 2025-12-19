@@ -1,4 +1,3 @@
-// StaffDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -15,7 +14,10 @@ import {
   FaTasks,
   FaHistory,
   FaChartPie,
-  FaBell
+  FaBell,
+  FaEdit,
+  FaSave,
+  FaTimes
 } from 'react-icons/fa';
 
 const StaffDashboard = () => {
@@ -33,6 +35,14 @@ const StaffDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [todaysIssues, setTodaysIssues] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    phone: '',
+    department: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchStaffData();
@@ -40,20 +50,21 @@ const StaffDashboard = () => {
 
   const fetchStaffData = async () => {
     try {
-      console.log('🔍 Fetching staff data...');
-      
-      // Get staff data from localStorage
       const user = localStorage.getItem('user');
       if (!user) {
-        console.error('❌ No user found in localStorage');
         navigate('/login');
         return;
       }
 
       const parsedUser = JSON.parse(user);
       setStaffData(parsedUser);
+      
+      setEditForm({
+        displayName: parsedUser.displayName || parsedUser.name || '',
+        phone: parsedUser.phone || '',
+        department: parsedUser.department || ''
+      });
 
-      // Fetch staff's assigned issues
       const response = await axios.get(`https://public-infra-report-server.vercel.app/staff/dashboard-stats`, {
         params: {
           staffEmail: parsedUser.email,
@@ -61,12 +72,9 @@ const StaffDashboard = () => {
         }
       });
 
-      console.log('📊 Staff dashboard stats:', response.data);
-
       if (response.data.success) {
         setStats(response.data.stats);
         
-        // Fetch today's issues
         const issuesRes = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
           params: {
             staffEmail: parsedUser.email,
@@ -78,16 +86,14 @@ const StaffDashboard = () => {
           const allIssues = issuesRes.data.issues;
           const today = new Date().toISOString().split('T')[0];
           
-          // Filter today's tasks
           const todayTasks = allIssues.filter(issue => {
             const createdDate = new Date(issue.createdAt || issue.reportedAt).toISOString().split('T')[0];
             const dueDate = issue.dueDate ? new Date(issue.dueDate).toISOString().split('T')[0] : null;
             return createdDate === today || dueDate === today;
           });
           
-          setTodaysIssues(todayTasks.slice(0, 5)); // Show only 5 tasks
+          setTodaysIssues(todayTasks.slice(0, 5)); 
           
-          // Set recent activity (last 5 issues)
           setRecentActivity(allIssues.slice(0, 5).map(issue => ({
             id: issue._id,
             title: issue.title,
@@ -96,49 +102,78 @@ const StaffDashboard = () => {
             date: issue.createdAt || issue.reportedAt
           })));
         }
-      } else {
-        // If endpoint fails, use fallback data
-        setFallbackData();
       }
       
     } catch (error) {
-      console.error('❌ Error fetching staff data:', error);
-      setFallbackData();
+      console.error('Error fetching staff data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const setFallbackData = () => {
-    // Fallback data for testing/demo
-    setStats({
-      assignedIssues: 12,
-      pendingIssues: 5,
-      resolvedIssues: 7,
-      todaysTasks: 3,
-      weeklyResolved: 4,
-      averageResolutionTime: 2.5,
-      inProgressIssues: 2
-    });
-
-    setTodaysIssues([
-      { id: '1', title: 'Fix pothole on Main Street', status: 'pending', priority: 'high' },
-      { id: '2', title: 'Repair street light', status: 'in-progress', priority: 'medium' },
-      { id: '3', title: 'Clear drainage blockage', status: 'pending', priority: 'high' }
-    ]);
-
-    setRecentActivity([
-      { id: '1', title: 'Fix pothole on Main Street', status: 'pending', priority: 'high', date: '2024-01-15' },
-      { id: '2', title: 'Repair street light', status: 'in-progress', priority: 'medium', date: '2024-01-14' },
-      { id: '3', title: 'Clear drainage blockage', status: 'pending', priority: 'high', date: '2024-01-14' },
-      { id: '4', title: 'Replace broken sign', status: 'resolved', priority: 'low', date: '2024-01-13' },
-      { id: '5', title: 'Fix sidewalk crack', status: 'resolved', priority: 'medium', date: '2024-01-12' }
-    ]);
-  };
-
   const refreshData = () => {
     setLoading(true);
     fetchStaffData();
+  };
+
+  const startEditing = () => {
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setEditForm({
+      displayName: staffData?.displayName || staffData?.name || '',
+      phone: staffData?.phone || '',
+      department: staffData?.department || ''
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const saveProfile = async () => {
+    if (!staffData?.email) {
+      // console.error('No user email found');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await axios.patch(`https://public-infra-report-server.vercel.app/users/${staffData.email}`, {
+        displayName: editForm.displayName,
+        phone: editForm.phone,
+        department: editForm.department
+      });
+
+      if (response.data.success) {
+        const updatedUser = {
+          ...staffData,
+          displayName: editForm.displayName,
+          name: editForm.displayName,
+          phone: editForm.phone,
+          department: editForm.department
+        };
+        
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setStaffData(updatedUser);
+        
+        setIsEditing(false);
+        alert('Profile updated successfully!');
+      } else {
+        alert('Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Error updating profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -182,45 +217,147 @@ const StaffDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FaUserTie className="w-6 h-6 text-blue-600" />
+      {/* Header with Edit Profile Section */}
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FaUserTie className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  Staff Dashboard
+                </h1>
+                <p className="text-gray-600">
+                  Welcome back, {staffData?.displayName || staffData?.name || staffData?.email?.split('@')[0]}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                Staff Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Welcome back, {staffData?.name || staffData?.displayName || staffData?.email?.split('@')[0]}
-              </p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                Staff Member
+              </span>
+              {staffData?.department && (
+                <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                  {staffData.department}
+                </span>
+              )}
+              <span className="text-sm text-gray-500">
+                • Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-              Staff Member
-            </span>
-            <span className="text-sm text-gray-500">
-              • Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={refreshData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <FaChartBar className="w-4 h-4" />
+              Refresh Data
+            </button>
+            
+            {!isEditing ? (
+              <button
+                onClick={startEditing}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <FaEdit className="w-4 h-4" />
+                Edit Profile
+              </button>
+            ) : (
+              <button
+                onClick={cancelEditing}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <FaTimes className="w-4 h-4" />
+                Cancel
+              </button>
+            )}
           </div>
         </div>
-        
-        <button
-          onClick={refreshData}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <FaChartBar className="w-4 h-4" />
-          Refresh Data
-        </button>
+
+        {isEditing && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Edit Your Profile</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={editForm.displayName}
+                  onChange={handleEditChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your display name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={editForm.phone}
+                  onChange={handleEditChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  name="department"
+                  value={editForm.department}
+                  onChange={handleEditChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your department"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={cancelEditing}
+                    disabled={isSaving}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveProfile}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="w-4 h-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Assigned Issues Card */}
         <div className="bg-white rounded-xl shadow border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-700">Assigned Issues</h3>
@@ -238,9 +375,6 @@ const StaffDashboard = () => {
           </div>
         </div>
         
-       
-        
-        {/* Resolved Issues Card */}
         <div className="bg-white rounded-xl shadow border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-700">Resolved Issues</h3>
@@ -264,14 +398,9 @@ const StaffDashboard = () => {
             </div>
           )}
         </div>
-        
-       
       </div>
 
-      {/* Main Content Area - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Today's Tasks Section */}
         <div className="bg-white rounded-xl shadow border border-gray-200">
           <div className="p-5 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -344,7 +473,6 @@ const StaffDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity Section */}
         <div className="bg-white rounded-xl shadow border border-gray-200">
           <div className="p-5 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -409,11 +537,10 @@ const StaffDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Updated to 2 columns instead of 3 */}
       <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={() => navigate('/dashboard/staff/my-issues')}
             className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors text-left group"
@@ -429,24 +556,6 @@ const StaffDashboard = () => {
             </p>
             <span className="inline-flex items-center text-blue-600 font-medium text-sm group-hover:underline">
               Go to My Issues <FaArrowRight className="w-4 h-4 ml-2" />
-            </span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/dashboard/staff/pending-issues')}
-            className="p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 transition-colors text-left group"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <FaClock className="w-6 h-6 text-yellow-600" />
-              </div>
-              <h3 className="font-bold text-gray-900">Pending Issues</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-3">
-              Review and update your pending issues
-            </p>
-            <span className="inline-flex items-center text-yellow-600 font-medium text-sm group-hover:underline">
-              View Pending <FaArrowRight className="w-4 h-4 ml-2" />
             </span>
           </button>
           
@@ -467,11 +576,9 @@ const StaffDashboard = () => {
               View Resolved <FaArrowRight className="w-4 h-4 ml-2" />
             </span>
           </button>
-          
         </div>
       </div>
 
-      {/* Performance Overview */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow border border-blue-100 p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>

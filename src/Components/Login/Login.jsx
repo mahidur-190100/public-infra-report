@@ -1,12 +1,12 @@
-// Login.jsx - Updated version with hide/show password functionality
+
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../../Hooks/useAuth';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons from react-icons
-import { motion } from 'framer-motion'; // Import Framer Motion
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
+import { motion } from 'framer-motion'; 
 
 const Login = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();

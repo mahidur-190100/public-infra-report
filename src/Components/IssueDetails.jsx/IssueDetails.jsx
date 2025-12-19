@@ -45,7 +45,7 @@ const IssueDetails = () => {
   const initialData = useLoaderData();
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   // Get current user info
   const getCurrentUser = () => {
     try {
@@ -61,14 +61,14 @@ const IssueDetails = () => {
           isPremium: user.isPremium || false
         };
       }
-      
+
       // Fallback to the old userId system
       let userId = localStorage.getItem("userId");
       if (!userId) {
         userId = "user_" + Date.now() + Math.random().toString(36).substr(2, 9);
         localStorage.setItem("userId", userId);
       }
-      
+
       return {
         email: userId.includes('@') ? userId : `${userId}@demo.com`,
         role: "user",
@@ -87,14 +87,14 @@ const IssueDetails = () => {
   const currentUserRole = currentUser?.role || 'user';
   const currentUserEmail = currentUser?.email || '';
   const isUserPremium = currentUser?.isPremium || false;
-  
+
   const [issue, setIssue] = useState(initialData?.data || initialData);
   const [upvotes, setUpvotes] = useState(issue?.upvotes || 0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [isUpvoting, setIsUpvoting] = useState(false);
   const [canUpvote, setCanUpvote] = useState(true);
   const [upvoteMessage, setUpvoteMessage] = useState("");
-  
+
   // Edit/Delete states
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
@@ -110,7 +110,7 @@ const IssueDetails = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
   // Boost states
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [boostProcessing, setBoostProcessing] = useState(false);
@@ -128,7 +128,7 @@ const IssueDetails = () => {
       setHasUpvoted(issue.upvotedBy.includes(currentUserId));
     }
     setUpvotes(issue?.upvotes || 0);
-    
+
     // Check permissions
     checkPermissions();
   }, [issue, currentUserId]);
@@ -150,10 +150,10 @@ const IssueDetails = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setPermissions(data.permissions);
-        
+
         // Also check upvote permissions
         checkUpvotePermissions();
       }
@@ -175,7 +175,7 @@ const IssueDetails = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setCanUpvote(data.canUpvote);
         setUpvoteMessage(data.message || "");
@@ -206,16 +206,16 @@ const IssueDetails = () => {
         if (data.canUpvote) {
           setUpvotes(data.upvotes);
           setHasUpvoted(data.hasUpvoted);
-          
+
           // Update the issue data
           setIssue(prev => ({
             ...prev,
             upvotes: data.upvotes,
-            upvotedBy: data.hasUpvoted 
+            upvotedBy: data.hasUpvoted
               ? [...(prev.upvotedBy || []), currentUserId]
               : (prev.upvotedBy || []).filter(id => id !== currentUserId)
           }));
-          
+
           toast.success(data.hasUpvoted ? "Issue upvoted!" : "Upvote removed");
         } else {
           setCanUpvote(false);
@@ -237,6 +237,14 @@ const IssueDetails = () => {
   const startEditing = () => {
     const isPending = (issue?.status || '').toLowerCase() === 'pending';
     const isUser = permissions.userRole === 'user';
+    const isStaff = permissions.userRole === 'staff';
+
+    // Prevent staff from editing
+    if (isStaff) {
+      toast.error("Staff members cannot edit issues.");
+      return;
+    }
+
     if (isUser && !isPending) {
       toast.error("You can only edit when the issue is Pending.");
       return;
@@ -267,6 +275,15 @@ const IssueDetails = () => {
   const saveEdit = async () => {
     const isPending = (issue?.status || '').toLowerCase() === 'pending';
     const isUser = permissions.userRole === 'user';
+    const isStaff = permissions.userRole === 'staff';
+
+    // Prevent staff from editing
+    if (isStaff) {
+      toast.error("Staff members cannot edit issues.");
+      setIsEditing(false);
+      return;
+    }
+
     if (isUser && !isPending) {
       toast.error("You can only edit when the issue is Pending.");
       setIsEditing(false);
@@ -296,7 +313,7 @@ const IssueDetails = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         if (data.data) {
           setIssue(data.data);
@@ -308,11 +325,11 @@ const IssueDetails = () => {
             setIssue(updatedData.data || updatedData);
           }
         }
-        
+
         setIsEditing(false);
         setEditForm({});
         toast.success("Issue updated successfully!");
-        
+
         // Re-check permissions
         checkPermissions();
       } else {
@@ -330,6 +347,14 @@ const IssueDetails = () => {
   const confirmDelete = () => {
     const isPending = (issue?.status || '').toLowerCase() === 'pending';
     const isUser = permissions.userRole === 'user';
+    const isStaff = permissions.userRole === 'staff';
+
+    // Prevent staff from deleting
+    if (isStaff) {
+      toast.error("Staff members cannot delete issues.");
+      return;
+    }
+
     if (isUser && !isPending) {
       toast.error("You can only delete when the issue is Pending.");
       return;
@@ -340,11 +365,10 @@ const IssueDetails = () => {
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
   };
-
   const deleteIssue = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}/delete`, {
+      const response = await fetch(`https://public-infra-report-server.vercel.app/issues/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -353,7 +377,7 @@ const IssueDetails = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         toast.success("Issue deleted successfully!");
         navigate("/issues");
@@ -518,16 +542,16 @@ const IssueDetails = () => {
             updatedAt: new Date().toISOString()
           }));
 
-          // Show success toast
+          // Show success toast without emoji
           toast.success(
             <div>
-              <div className="font-bold">🎉 Boost Successful!</div>
+              <div className="font-bold">Boost Successful!</div>
               <div>Issue priority upgraded from <span className="font-semibold">Normal</span> to <span className="font-semibold text-red-600">High</span></div>
               <div className="text-sm text-gray-600 mt-1">Transaction ID: {boostData.transactionId}</div>
             </div>,
             {
               duration: 5000,
-              icon: '🚀'
+              icon: <FaRocket />
             }
           );
 
@@ -550,7 +574,7 @@ const IssueDetails = () => {
   // Function to safely get assigned staff details
   const getAssignedStaffInfo = () => {
     if (!issue?.assignedTo) return null;
-    
+
     if (typeof issue.assignedTo === 'string') {
       return {
         name: issue.assignedTo,
@@ -558,7 +582,7 @@ const IssueDetails = () => {
         email: null
       };
     }
-    
+
     if (typeof issue.assignedTo === 'object' && issue.assignedTo !== null) {
       return {
         name: issue.assignedTo.name || issue.assignedTo.displayName || 'Staff Member',
@@ -567,7 +591,7 @@ const IssueDetails = () => {
         role: issue.assignedTo.role || 'staff'
       };
     }
-    
+
     return null;
   };
 
@@ -609,7 +633,7 @@ const IssueDetails = () => {
       "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium";
 
     const statusText = status || 'Pending';
-    
+
     switch (statusText.toLowerCase()) {
       case "pending":
         return (
@@ -642,7 +666,7 @@ const IssueDetails = () => {
   // Get priority badge
   const getPriorityBadge = () => {
     const priorityText = priority || 'Normal';
-    
+
     if (priorityText.toLowerCase() === "high") {
       return (
         <div className="flex items-center gap-1">
@@ -663,7 +687,7 @@ const IssueDetails = () => {
   // Get category icon
   const getCategoryIcon = () => {
     const categoryText = category || 'General';
-    
+
     switch (categoryText.toLowerCase()) {
       case "road damage":
       case "roads":
@@ -725,10 +749,20 @@ const IssueDetails = () => {
   // Derived UI permissions based on role and status
   const isPending = (status || '').toLowerCase() === 'pending';
   const isUser = permissions.userRole === 'user';
+  const isStaff = permissions.userRole === 'staff';
 
-  // Final UI gate: users can edit/delete only when Pending; admin/staff keep server permissions
-  const canEditUI = Boolean(permissions.canEdit && (isUser ? isPending : true));
-  const canDeleteUI = Boolean(permissions.canDelete && (isUser ? isPending : true));
+  // Final UI gate: users can edit/delete only when Pending; admin can always edit; staff cannot edit
+  const canEditUI = Boolean(
+    permissions.canEdit &&
+    !isStaff && // Staff cannot edit
+    (isUser ? isPending : true)
+  );
+
+  const canDeleteUI = Boolean(
+    permissions.canDelete &&
+    !isStaff && // Staff cannot delete
+    (isUser ? isPending : true)
+  );
 
   // Boost: only reporter, user role, Pending, and not already high priority
   const canBoost = Boolean(
@@ -741,7 +775,7 @@ const IssueDetails = () => {
 
   return (
     <div className="min-h-screen py-8">
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
@@ -765,7 +799,7 @@ const IssueDetails = () => {
           },
         }}
       />
-      
+
       <div className="max-w-6xl mx-auto px-4">
         {/* Edit/Delete/Boost Actions Bar */}
         {!loadingPermissions && (canEditUI || canDeleteUI || canBoost) && (
@@ -780,7 +814,7 @@ const IssueDetails = () => {
                   {permissions.userRole === "user" && !permissions.isReporter && "Regular User - Limited access"}
                 </p>
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 {/* Boost Button */}
                 {canBoost && (
@@ -792,7 +826,7 @@ const IssueDetails = () => {
                     Boost Issue (₹100)
                   </button>
                 )}
-                
+
                 {canEditUI && !isEditing && (
                   <button
                     onClick={startEditing}
@@ -801,7 +835,7 @@ const IssueDetails = () => {
                     <FaEdit /> Edit Issue
                   </button>
                 )}
-                
+
                 {canDeleteUI && (
                   <button
                     onClick={confirmDelete}
@@ -810,7 +844,7 @@ const IssueDetails = () => {
                     <FaTrash /> Delete Issue
                   </button>
                 )}
-                
+
                 {isEditing && (
                   <button
                     onClick={cancelEditing}
@@ -828,15 +862,15 @@ const IssueDetails = () => {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Image Section */}
           <div className="relative h-64 md:h-80">
-            <img 
-              src={image || "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800"} 
-              alt={title} 
-              className="w-full h-full object-cover" 
+            <img
+              src={image || "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800"}
+              alt={title}
+              className="w-full h-full object-cover"
             />
             <div className="absolute top-4 left-4 bg-white/90 p-3 rounded-lg">
               {getCategoryIcon()}
             </div>
-            
+
             {/* Priority Badge on Image */}
             <div className="absolute top-4 right-4">
               {getPriorityBadge()}
@@ -875,7 +909,7 @@ const IssueDetails = () => {
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                       {title || "Untitled Issue"}
                     </h1>
-                    
+
                     {/* Boost Info */}
                     {priority === "high" && (
                       <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full">
@@ -913,13 +947,12 @@ const IssueDetails = () => {
               <button
                 onClick={handleUpvote}
                 disabled={isUpvoting || !canUpvote}
-                className={`flex items-center gap-4 px-6 py-4 rounded-xl transition-all duration-300 ${
-                  hasUpvoted && canUpvote
+                className={`flex items-center gap-4 px-6 py-4 rounded-xl transition-all duration-300 ${hasUpvoted && canUpvote
                     ? "bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 shadow-lg"
                     : !canUpvote
-                    ? "bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 cursor-not-allowed"
-                    : "bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg"
-                } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
+                      ? "bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 cursor-not-allowed"
+                      : "bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg"
+                  } ${isUpvoting ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 {!canUpvote ? (
                   <>
@@ -939,11 +972,10 @@ const IssueDetails = () => {
                 ) : (
                   <>
                     <FaThumbsUp
-                      className={`w-8 h-8 transition-all ${
-                        hasUpvoted
+                      className={`w-8 h-8 transition-all ${hasUpvoted
                           ? "text-blue-600 transform scale-110"
                           : "text-gray-500"
-                      }`}
+                        }`}
                     />
                     <div className="text-left">
                       <div className="flex items-baseline gap-2">
@@ -953,12 +985,11 @@ const IssueDetails = () => {
                         <span className="text-gray-600">Upvotes</span>
                       </div>
                       <span
-                        className={`text-sm font-medium ${
-                          hasUpvoted ? "text-blue-600" : "text-gray-500"
-                        }`}
+                        className={`text-sm font-medium ${hasUpvoted ? "text-blue-600" : "text-gray-500"
+                          }`}
                       >
                         {hasUpvoted
-                          ? "✓ You've upvoted this issue"
+                          ? "You've upvoted this issue"
                           : "Click to upvote this issue"}
                       </span>
                     </div>
@@ -1026,7 +1057,7 @@ const IssueDetails = () => {
                         <p className="text-gray-700 font-medium">{staffInfo.name}</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 ml-8">
                       <div className="flex items-center">
                         <FaBuilding className="w-4 h-4 text-gray-400 mr-2" />
@@ -1034,7 +1065,7 @@ const IssueDetails = () => {
                           {staffInfo.department}
                         </span>
                       </div>
-                      
+
                       {staffInfo.email && (
                         <div className="flex items-center">
                           <FaEnvelope className="w-4 h-4 text-gray-400 mr-2" />
@@ -1043,7 +1074,7 @@ const IssueDetails = () => {
                           </span>
                         </div>
                       )}
-                      
+
                       {staffInfo.role && (
                         <div className="sm:col-span-2">
                           <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -1192,7 +1223,7 @@ const IssueDetails = () => {
                     <p className="text-sm text-gray-600">Get faster attention for your issue</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">Current Priority:</span>
@@ -1224,7 +1255,7 @@ const IssueDetails = () => {
                     onClick={() => setBoostPaymentMethod('upi')}
                     className={`p-3 border rounded-lg flex flex-col items-center justify-center transition-all ${boostPaymentMethod === 'upi' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
                   >
-                    <span className="text-2xl mb-2">📱</span>
+                    <FaCreditCard className="w-6 h-6 text-gray-600 mb-2" />
                     <span className="text-sm font-medium">UPI</span>
                   </button>
                 </div>
@@ -1323,10 +1354,9 @@ const IssueDetails = () => {
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center">
                   <p className="text-gray-600 mb-4">Scan UPI QR code or enter UPI ID</p>
                   <div className="p-4 bg-white border border-gray-300 rounded-lg inline-block">
-                    {/* Mock QR Code */}
                     <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded">
                       <div className="text-center">
-                        <div className="text-4xl mb-2">📱</div>
+                        <FaCreditCard className="w-12 h-12 text-gray-400 mb-2" />
                         <p className="text-sm text-gray-600">UPI QR Code</p>
                       </div>
                     </div>
@@ -1347,7 +1377,7 @@ const IssueDetails = () => {
 
               {/* Benefits of Boost */}
               <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-green-800 mb-2">🚀 Benefits of Boosting:</h4>
+                <h4 className="font-semibold text-green-800 mb-2">Benefits of Boosting:</h4>
                 <ul className="text-sm text-green-700 space-y-1">
                   <li>• Issue gets marked as High Priority</li>
                   <li>• 3x faster response time</li>

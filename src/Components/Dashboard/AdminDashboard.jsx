@@ -1,4 +1,4 @@
-// AdminDashboard.jsx - Updated (Dashboard Content Only)
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
@@ -28,21 +28,20 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      console.log('🔍 Fetching dashboard data...');
+      // console.log(' dashboard data...');
       
       // Fetch issue statistics
       const issuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues-stats');
-      console.log('📊 Issues stats response:', issuesRes.data);
+      // console.log('Issues stats response:', issuesRes.data);
       
       // Fetch all issues for more detailed stats
       const allIssuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues');
-      console.log('📊 All issues response:', allIssuesRes.data);
+      // console.log('All issues response:', allIssuesRes.data);
       
       // Fetch user statistics
       const usersRes = await axios.get('https://public-infra-report-server.vercel.app/users');
-      console.log('👥 Users response:', usersRes.data);
+      // console.log( Users response:', usersRes.data);
       
-      // Process issues data
       let issuesData = [];
       if (issuesRes.data.success && issuesRes.data.stats) {
         // From issues-stats endpoint
@@ -54,10 +53,10 @@ const AdminDashboard = () => {
           resolvedIssues: statsData.resolved || 0
         }));
       } else if (allIssuesRes.data.success && Array.isArray(allIssuesRes.data.issues)) {
-        // From issues endpoint (structured response)
+       
         issuesData = allIssuesRes.data.issues;
       } else if (Array.isArray(allIssuesRes.data)) {
-        // From issues endpoint (raw array)
+        
         issuesData = allIssuesRes.data;
       }
       
@@ -71,7 +70,7 @@ const AdminDashboard = () => {
           issue.status && issue.status.toLowerCase() === 'resolved'
         ).length;
         
-        console.log(`📊 Calculated: Total=${totalIssues}, Pending=${pendingIssues}, Resolved=${resolvedIssues}`);
+        // console.log(` Calculated: Total=${totalIssues}, Pending=${pendingIssues}, Resolved=${resolvedIssues}`);
         
         setStats(prev => ({
           ...prev,
@@ -88,7 +87,7 @@ const AdminDashboard = () => {
         const adminUsers = usersData.filter(user => user.role === 'admin').length;
         const regularUsers = usersData.filter(user => user.role === 'user' || !user.role).length;
         
-        console.log(`👥 Calculated: Total=${totalUsers}, Admins=${adminUsers}, Users=${regularUsers}`);
+        // console.log(`Calculated: Total=${totalUsers}, Admins=${adminUsers}, Users=${regularUsers}`);
         
         setStats(prev => ({
           ...prev,
@@ -98,10 +97,10 @@ const AdminDashboard = () => {
         }));
       }
       
-      console.log('✅ Final stats:', stats);
+      // console.log(' Final stats:', stats);
       
     } catch (error) {
-      console.error('❌ Error fetching dashboard data:', error);
+      console.error(' Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-// DashboardLayout.jsx
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
@@ -28,67 +28,63 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("=== DASHBOARD LAYOUT DEBUG START ===");
+   
     
     // Check localStorage for user/admin data
     const admin = localStorage.getItem('admin');
     const user = localStorage.getItem('user');
     
-    console.log("🔍 LocalStorage 'admin' value:", admin);
-    console.log("🔍 LocalStorage 'user' value:", user);
     
     if (admin) {
       try {
         const adminData = JSON.parse(admin);
-        console.log("✅ Parsed admin data:", adminData);
+        // console.log("Parsed admin data:", adminData);
         
-        // Set both state updates together
         setUserData(adminData);
         setUserRole('admin');
         
-        console.log("✅ State updates queued for admin");
+    
         
       } catch (error) {
-        console.error('❌ Error parsing admin data:', error);
+        console.error(' Error parsing admin data:', error);
         localStorage.removeItem('admin');
         navigate('/login');
       }
     } else if (user) {
       try {
         const userData = JSON.parse(user);
-        console.log("✅ Parsed user data:", userData);
+       
         
         // Check user role from localStorage
         const role = userData.role || 'user';
-        console.log("📌 User role detected:", role);
+     
         
-        // If user is staff, redirect to staff dashboard
+        
         if (role === 'staff') {
-          console.log("⚠️ Staff user detected, redirecting to staff dashboard...");
+        
           navigate('/dashboard/staff');
-          return; // Don't set state, just redirect
+          return; 
         }
         
         setUserData(userData);
         setUserRole(role);
         
-        console.log("✅ State updates queued for user with role:", role);
+      
       } catch (error) {
-        console.error('❌ Error parsing user data:', error);
+        console.error('Error parsing user data:', error);
         localStorage.removeItem('user');
         navigate('/login');
       }
     } else {
-      console.log("❌ No user logged in - redirecting to login");
       navigate('/login');
     }
     
-    console.log("=== DASHBOARD LAYOUT DEBUG END ===");
+   
   }, [navigate]);
 
   // Add this useEffect to log when state actually updates
   useEffect(() => {
-    console.log("🔄 State updated - userRole:", userRole, "userData:", userData);
+    // console.log(" State updated - userRole:", userRole, "userData:", userData);
   }, [userRole, userData]);
 
   // Regular User Menu Items

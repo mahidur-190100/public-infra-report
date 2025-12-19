@@ -9,7 +9,7 @@ const useUserValidation = () => {
   const [error, setError] = useState(null);
 
   const validateUser = useCallback(async (forceCheck = false) => {
-    // Skip if already validated and not forced
+    
     if (isValid === true && !forceCheck) return true;
 
     setLoading(true);
@@ -53,20 +53,17 @@ const useUserValidation = () => {
         return false;
       }
 
-      console.log(`🔍 Validating ${role} user: ${email}`);
-
-      // Call validation endpoint
       const response = await axios.post('https://public-infra-report-server.vercel.app/validate-user', {
         email: email,
         uid: uid
       });
 
-      console.log('✅ Validation response:', response.data);
+     
 
       if (response.data.success) {
         if (response.data.valid === false) {
           if (response.data.blocked) {
-            console.log('🚫 USER IS BLOCKED');
+           
             // Clear localStorage for blocked users
             localStorage.removeItem('admin');
             localStorage.removeItem('user');
@@ -86,7 +83,7 @@ const useUserValidation = () => {
       }
 
     } catch (error) {
-      console.error('❌ Error validating user:', error);
+      console.error(' Error validating user:', error);
       setError(error.message);
       setIsValid(false);
       return false;

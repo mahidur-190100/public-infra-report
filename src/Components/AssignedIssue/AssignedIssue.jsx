@@ -72,12 +72,12 @@ const AssignedIssue = () => {
   const fetchStaffAssignedIssues = async () => {
     try {
       setLoading(true);
-      console.log('🔍 ===== FETCHING STAFF ISSUES START =====');
+     
       
       // Get staff data from localStorage
       const user = localStorage.getItem('user');
       if (!user) {
-        console.error('❌ No user found in localStorage');
+        // console.error(' No user found in localStorage');
         navigate('/login');
         return;
       }
@@ -87,23 +87,16 @@ const AssignedIssue = () => {
       
       // Check if user is staff
       if (parsedUser.role !== 'staff') {
-        console.error('❌ User is not staff');
+        // console.error(' User is not staff');
         navigate('/dashboard');
         return;
       }
-
-      console.log('👤 Staff user:', {
-        email: parsedUser.email,
-        name: parsedUser.name || parsedUser.displayName,
-        id: parsedUser.id || parsedUser._id,
-        role: parsedUser.role
-      });
 
       let allAssignedIssues = [];
 
       // METHOD 1: Try the staff/issues endpoint
       try {
-        console.log('📡 Trying /staff/issues endpoint...');
+       
         const staffResponse = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
           params: {
             staffEmail: parsedUser.email,
@@ -111,33 +104,27 @@ const AssignedIssue = () => {
           }
         });
 
-        console.log('📊 Staff endpoint response:', staffResponse.data);
+        
 
         if (staffResponse.data.success) {
           const issuesFromEndpoint = staffResponse.data.issues || [];
-          console.log(`✅ Found ${issuesFromEndpoint.length} issues via staff endpoint`);
+          // console.log(` Found ${issuesFromEndpoint.length} issues via staff endpoint`);
           allAssignedIssues = [...allAssignedIssues, ...issuesFromEndpoint];
         }
       } catch (endpointError) {
-        console.log('⚠️ Staff endpoint failed:', endpointError.message);
+        // console.log(' Staff endpoint failed:', endpointError.message);
       }
 
       // METHOD 2: Fetch all issues and filter manually
       try {
-        console.log('📡 Fetching all issues for manual filtering...');
+       
         const allIssuesResponse = await axios.get('https://public-infra-report-server.vercel.app/issues');
         
         if (allIssuesResponse.data.success) {
           const allIssues = allIssuesResponse.data.issues || [];
-          console.log(`📋 Total issues in system: ${allIssues.length}`);
+          // console.log(` Total issues in system: ${allIssues.length}`);
           
-          // Debug: Show first 3 issues structure
-          console.log('🔍 Sample issues structure:');
-          allIssues.slice(0, 3).forEach((issue, idx) => {
-            console.log(`${idx + 1}. ${issue.title}`);
-            console.log(`   assignedTo:`, issue.assignedTo);
-            console.log(`   Type: ${typeof issue.assignedTo}`);
-          });
+         
 
           // Filter for this staff member
           const manuallyFiltered = allIssues.filter(issue => {
@@ -166,7 +153,6 @@ const AssignedIssue = () => {
             return false;
           });
 
-          console.log(`✅ Manually found ${manuallyFiltered.length} additional issues`);
           
           // Add unique issues from manual filtering
           const existingIds = new Set(allAssignedIssues.map(i => i._id));
@@ -174,12 +160,12 @@ const AssignedIssue = () => {
           allAssignedIssues = [...allAssignedIssues, ...newIssues];
         }
       } catch (allIssuesError) {
-        console.error('❌ Error fetching all issues:', allIssuesError.message);
+        console.error(' Error fetching all issues:', allIssuesError.message);
       }
 
       // METHOD 3: Try debug endpoint to see all issues
       try {
-        console.log('📡 Checking debug endpoint...');
+       
         const debugResponse = await axios.get('https://public-infra-report-server.vercel.app/debug/all-issues');
         if (debugResponse.data.success) {
           const debugIssues = debugResponse.data.issues || [];
@@ -200,7 +186,6 @@ const AssignedIssue = () => {
             return false;
           });
 
-          console.log(`🔍 Debug endpoint shows ${debugFiltered.length} possible matches`);
           
           // Add unique issues
           const existingIds = new Set(allAssignedIssues.map(i => i._id));
@@ -208,13 +193,13 @@ const AssignedIssue = () => {
           allAssignedIssues = [...allAssignedIssues, ...newDebugIssues];
         }
       } catch (debugError) {
-        console.log('⚠️ Debug endpoint not available:', debugError.message);
+        console.log('Debug endpoint not available:', debugError.message);
       }
 
-      console.log(`🎯 FINAL: Total assigned issues found: ${allAssignedIssues.length}`);
+    
       
       // Set debug info
-      setDebugInfo(`Found ${allAssignedIssues.length} issues using multiple methods`);
+      // setDebugInfo(`Found ${allAssignedIssues.length} issues using multiple methods`);
       
       // Remove duplicates
       const uniqueIssues = Array.from(new Map(allAssignedIssues.map(item => [item._id, item])).values());
@@ -223,12 +208,12 @@ const AssignedIssue = () => {
       calculateStats(uniqueIssues);
       
     } catch (error) {
-      console.error('❌ Critical error in fetchStaffAssignedIssues:', error);
+      console.error('Critical error in fetchStaffAssignedIssues:', error);
       setDebugInfo(`Error: ${error.message}`);
       setIssues([]);
     } finally {
       setLoading(false);
-      console.log('===== FETCHING STAFF ISSUES END =====');
+    
     }
   };
 
@@ -338,7 +323,7 @@ const AssignedIssue = () => {
         return;
       }
 
-      console.log(`Updating issue ${issueId} status to ${newStatus}`);
+      // console.log(`Updating issue ${issueId} status to ${newStatus}`);
       
       // Call API to update status
       const response = await axios.post(`https://public-infra-report-server.vercel.app/issues/${issueId}/update-status`, {
@@ -348,8 +333,7 @@ const AssignedIssue = () => {
         updatedByEmail: staffData?.email
       });
 
-      console.log('Status update response:', response.data);
-
+      // console.log('Status update response:', response.data);
       if (response.data.success) {
         // Update local state
         const updatedIssues = issues.map(issue => {
@@ -387,7 +371,7 @@ const AssignedIssue = () => {
       
     } catch (error) {
       console.error('Error updating issue status:', error);
-      alert('❌ Failed to update issue status. Please try again.');
+      alert(' Failed to update issue status. Please try again.');
     }
   };
 

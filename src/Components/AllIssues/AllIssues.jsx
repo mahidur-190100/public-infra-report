@@ -12,8 +12,9 @@ const AllIssues = () => {
     const [refreshing, setRefreshing] = useState(false);
     
     // New state for sorting and filtering
-    const [sortBy, setSortBy] = useState('recent'); // recent, upvotes, title, status, priority
-    const [sortOrder, setSortOrder] = useState('desc'); // asc, desc
+    const [sortBy, setSortBy] = useState('recent');
+    // sort order 
+    const [sortOrder, setSortOrder] = useState('desc'); 
     const [showFilters, setShowFilters] = useState(false);
     const [filters, setFilters] = useState({
         category: 'all',
@@ -34,7 +35,7 @@ const AllIssues = () => {
             const data = await response.json();
             
             if (data.success && Array.isArray(data.issues)) {
-                console.log(`Fetched ${data.issues.length} issues from API`);
+                // console.log(`Fetched ${data.issues.length} issues from API`);
                 setAllIssues(data.issues);
             } else {
                 console.warn('Unexpected API response format:', data);
@@ -52,27 +53,27 @@ const AllIssues = () => {
         }
     };
 
-    // Function to handle loader data
+    // loader data
     const handleLoaderData = (data) => {
         try {
-            console.log("Processing loader data...");
+            // console.log("Processing loader data...");
             
             // Handle different response formats
             if (data.success && Array.isArray(data.issues)) {
                 // New format: { success: true, issues: [...] }
                 setAllIssues(data.issues);
-                console.log("Using new format, issues count:", data.issues.length);
+                // console.log("Using new format, issues count:", data.issues.length);
             } else if (Array.isArray(data)) {
                 // Old format: raw array
                 setAllIssues(data);
-                console.log("Using old format, issues count:", data.length);
+                // console.log("Using old format, issues count:", data.length);
             } else if (data && data.issues && Array.isArray(data.issues)) {
                 // Another possible format
                 setAllIssues(data.issues);
-                console.log("Using alternative format, issues count:", data.issues.length);
+                // console.log("Using alternative format, issues count:", data.issues.length);
             } else {
                 // Default to empty array
-                console.warn("Unexpected data format, defaulting to empty array:", data);
+                // console.warn("Unexpected data format, defaulting to empty array:", data);
                 setAllIssues([]);
             }
         } catch (err) {
@@ -87,20 +88,20 @@ const AllIssues = () => {
         setLoading(false);
     }, [loaderData]);
 
-    // Auto-refresh every 30 seconds to catch updates
+    // refresh
     useEffect(() => {
         const interval = setInterval(() => {
-            console.log("Auto-refreshing issues data...");
+            // console.log("Auto-refreshing issues data...");
             fetchIssues();
-        }, 30000); // 30 seconds
+        }, 30000); 
 
         return () => clearInterval(interval);
     }, []);
 
-    // Create a custom event listener for issue updates
+    //  for issue updates
     useEffect(() => {
         const handleIssueUpdate = (event) => {
-            console.log("Received issue update event:", event.detail);
+            // console.log("Received issue update event:", event.detail);
             // Refresh data when we get an update event
             fetchIssues();
         };

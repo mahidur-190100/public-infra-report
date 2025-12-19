@@ -76,7 +76,7 @@ const ResolvedIssues = () => {
         return;
       }
 
-      console.log('👤 Fetching resolved issues for staff:', parsedUser.email);
+      // console.log('Fetching resolved issues for staff:', parsedUser.email);
 
       // Method 1: Get all issues and filter for resolved ones
       try {
@@ -116,13 +116,13 @@ const ResolvedIssues = () => {
             return false;
           });
 
-          console.log(`✅ Found ${staffResolvedIssues.length} resolved issues assigned to this staff`);
+          // console.log(` Found ${staffResolvedIssues.length} resolved issues assigned to this staff`);
           setResolvedIssues(staffResolvedIssues);
           calculateStats(staffResolvedIssues);
         }
       } catch (error) {
         console.error('Error fetching all issues:', error);
-        // Try alternative method
+       
         try {
           const staffResponse = await axios.get(`https://public-infra-report-server.vercel.app/staff/issues`, {
             params: {

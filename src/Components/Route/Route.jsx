@@ -1,5 +1,4 @@
-// router.jsx
-// router.jsx
+
 import { createBrowserRouter } from "react-router-dom";
 import HomeLayout from "../Layout/Home/HomeLayout";
 import Home from "../Home/Home";
@@ -23,11 +22,11 @@ import AdminLayout from "../Dashboard/AdminLayout";
 import StaffLayout from "../Dashboard/StaffLayout"; 
 import StaffDashboard from "../Dashboard/StaffDashboard";
 import ResolvedIssues from "../ResolvedIssues/ResolvedIssues";
-import PendingIssues from "../PendingIssues/PendingIssues";
 import AssignedIssue from "../AssignedIssue/AssignedIssue";
 import RejectIssue from "../../RejectIssue/RejectIssue";
 import ManageCitizens from "../ManageCitizens/ManageCitizens";
 import ProtectedRoute from "../../ProtectedRoute/ProtectedRoute";
+import StaffEditProfile from "../StaffEditProfile/StaffEditProfile";
 
 
 export const router = createBrowserRouter([
@@ -165,24 +164,19 @@ export const router = createBrowserRouter([
       },
       {
         path: 'my-issues',
-        element: <AssignedIssue></AssignedIssue> // You need to create this component
+        element: <AssignedIssue></AssignedIssue> 
       },
-      {
-        path: 'pending-issues',
-        element: <PendingIssues /> // You need to create this component
-      },
+      
       {
         path: 'resolved-issues',
-        element: <ResolvedIssues /> // You need to create this component
+        element: <ResolvedIssues /> 
       },
-      // {
-      //   path: 'today-tasks',
-      //   element: <TodayTasks /> // You need to create this component
-      // },
-      // {
-      //   path: 'rejected-issues',
-      //   element: <RejectedIssues /> // You need to create this component
-      // },
+      {
+        path: 'edit-profile',
+        element: <StaffEditProfile> </StaffEditProfile>
+
+      }
+      
     ]
   }
 ]);

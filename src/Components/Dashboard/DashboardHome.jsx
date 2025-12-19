@@ -1,4 +1,4 @@
-// DashboardHome.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -12,7 +12,7 @@ import {
 const DashboardHome = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
-  const [userRole, setUserRole] = useState('user'); // 'user', 'staff', or 'admin'
+  const [userRole, setUserRole] = useState('user');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalIssues: 0,
@@ -23,24 +23,23 @@ const DashboardHome = () => {
 
   // Create a memoized version of fetchDashboardData
   const fetchDashboardData = useCallback(async (role) => {
-    console.log("📊 fetchDashboardData called with role:", role);
+    // console.log(" fetchDashboardData called with role:", role);
     
     // Only fetch admin stats if user is admin
     if (role !== 'admin') {
-      console.log("📊 Not admin, skipping admin data fetch");
+      // console.log(" Not admin, skipping admin data fetch");
       setLoading(false);
       return;
     }
 
     try {
-      console.log("📊 Fetching admin stats...");
+      // console.log("Fetching admin stats...");
       
       // Fetch users data
       let users = [];
       try {
         const usersRes = await axios.get('https://public-infra-report-server.vercel.app/users');
-        console.log("📊 Users response:", usersRes.data);
-        
+        // console.log("Users response:", usersRes.data);
         // Handle different response formats
         if (Array.isArray(usersRes.data)) {
           users = usersRes.data;
@@ -50,16 +49,16 @@ const DashboardHome = () => {
           // If it's an object with user data
           users = Object.values(usersRes.data);
         }
-        console.log("📊 Processed users:", users);
+        // console.log(" Processed users:", users);
       } catch (usersError) {
-        console.error("❌ Error fetching users:", usersError);
+        console.error(" Error fetching users:", usersError);
       }
 
       // Fetch issues data
       let issues = [];
       try {
         const issuesRes = await axios.get('https://public-infra-report-server.vercel.app/issues');
-        console.log("📊 Issues response:", issuesRes.data);
+        // console.log(" Issues response:", issuesRes.data);
         
         // Handle different response formats
         if (Array.isArray(issuesRes.data)) {
@@ -70,9 +69,9 @@ const DashboardHome = () => {
           // If it's an object with issue data
           issues = Object.values(issuesRes.data);
         }
-        console.log("📊 Processed issues:", issues);
+        // console.log("Processed issues:", issues);
       } catch (issuesError) {
-        console.error("❌ Error fetching issues:", issuesError);
+        console.error("Error fetching issues:", issuesError);
       }
 
       // Calculate stats
@@ -87,11 +86,11 @@ const DashboardHome = () => {
         ).length
       };
 
-      console.log("📊 Calculated stats:", calculatedStats);
+      // console.log("Calculated stats:", calculatedStats);
       setStats(calculatedStats);
       
     } catch (error) {
-      console.error('❌ Error in fetchDashboardData:', error);
+      console.error('Error in fetchDashboardData:', error);
       
       // Try alternative endpoints or fallback data
       try {
@@ -123,7 +122,7 @@ const DashboardHome = () => {
           ).length
         });
       } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
+        console.error('Fallback also failed:', fallbackError);
       }
     } finally {
       setLoading(false);
@@ -131,14 +130,14 @@ const DashboardHome = () => {
   }, []);
 
   useEffect(() => {
-    console.log("=== DASHBOARD HOME DEBUG START ===");
+  
     
     // Get data directly from localStorage
     const admin = localStorage.getItem('admin');
     const user = localStorage.getItem('user');
     
-    console.log("📱 DashboardHome - localStorage admin:", admin);
-    console.log("📱 DashboardHome - localStorage user:", user);
+    // console.log("DashboardHome - localStorage admin:", admin);
+    // console.log("DashboardHome - localStorage user:", user);
     
     let currentUserData = null;
     let currentUserRole = 'user';
@@ -148,7 +147,7 @@ const DashboardHome = () => {
         const adminData = JSON.parse(admin);
         currentUserData = adminData;
         currentUserRole = 'admin';
-        console.log("📱 Admin check - role: admin");
+        // console.log("Admin check - role: admin");
       } catch (error) {
         console.error('Error parsing admin:', error);
       }
@@ -158,28 +157,26 @@ const DashboardHome = () => {
         currentUserData = userData;
         // Check if user has a role property in localStorage
         currentUserRole = userData.role || 'user';
-        console.log("📱 User check - role:", currentUserRole);
+        // console.log("User check - role:", currentUserRole);
       } catch (error) {
         console.error('Error parsing user:', error);
       }
     }
     
-    console.log("📱 Direct check - userRole:", currentUserRole);
-    console.log("📱 Direct check - userData:", currentUserData);
+    // console.log("Direct check - userRole:", currentUserRole);
+    // console.log("Direct check - userData:", currentUserData);
     
     // Set state
     setUserData(currentUserData);
     setUserRole(currentUserRole);
     
-    console.log("📱 State set - userRole:", currentUserRole);
+    // console.log("State set - userRole:", currentUserRole);
     
     // Fetch dashboard data with the current user role
     fetchDashboardData(currentUserRole);
-    
-    console.log("=== DASHBOARD HOME DEBUG END ===");
   }, [navigate, fetchDashboardData]);
 
-  // Refresh stats function (for admin only)
+  // Refresh stats function 
   const refreshStats = () => {
     setLoading(true);
     fetchDashboardData(userRole);
@@ -201,18 +198,11 @@ const DashboardHome = () => {
     );
   }
 
-  console.log("🎯 DashboardHome - Rendering with userRole:", userRole);
-  console.log("📊 Current stats:", stats);
 
-  // ==================== STAFF DASHBOARD ====================
   if (userRole === 'staff') {
-    console.log("👔 Rendering STAFF dashboard");
     
-    // Check if user should be redirected to staff dashboard
-    // Staff should always use the StaffDashboard component, not DashboardHome
-    // This is a fallback if they somehow land here
     useEffect(() => {
-      console.log("🔄 Staff user detected, redirecting to staff dashboard...");
+      // console.log("Staff user detected, redirecting to staff dashboard...");
       navigate('/dashboard/staff');
     }, [navigate]);
     
@@ -226,7 +216,6 @@ const DashboardHome = () => {
 
   // ==================== REGULAR USER DASHBOARD ====================
   if (userRole === 'user') {
-    console.log("👤 Rendering USER dashboard");
     return (
       <div className="p-3 sm:p-4 md:p-6">
         {/* Welcome Section */}
@@ -355,8 +344,7 @@ const DashboardHome = () => {
     );
   }
 
-  // ==================== ADMIN DASHBOARD ====================
-  console.log("👑 Rendering ADMIN dashboard");
+  // Admin dashboard
   return (
     <div className="p-3 sm:p-4 md:p-6">
       {/* Admin Welcome Section */}

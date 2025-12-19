@@ -1,4 +1,3 @@
-// StaffLayout.jsx
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
@@ -13,62 +12,48 @@ import {
   FaHome,
   FaUserTie,
   FaExclamationTriangle,
-  FaCalendarDay
+  FaCalendarDay,
+  FaUserEdit
 } from 'react-icons/fa';
-
 
 const StaffLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [staffData, setStaffData] = useState(null);
   const navigate = useNavigate();
 
-  /* ================== AUTH GUARD ================== */
   useEffect(() => {
     const checkStaffAccess = async () => {
       try {
         const user = localStorage.getItem('user');
         const admin = localStorage.getItem('admin');
 
-        console.log("🔍 StaffLayout - Checking authentication...");
-        console.log("📱 localStorage user:", user);
-        console.log("📱 localStorage admin:", admin);
-
         if (user) {
           try {
             const parsedUser = JSON.parse(user);
-            console.log("📱 Parsed user data:", parsedUser);
             
-            // Check if user has staff role
             if (parsedUser.role === 'staff') {
-              console.log("✅ Staff user authenticated");
               setStaffData(parsedUser);
               return;
             } else if (parsedUser.role === 'admin') {
-              console.log("⚠️ Admin trying to access staff dashboard, redirecting...");
               navigate('/dashboard/admin');
               return;
             } else {
-              console.log("⚠️ Regular user trying to access staff dashboard, redirecting...");
               navigate('/dashboard');
               return;
             }
           } catch (parseError) {
-            console.error("❌ Error parsing user data:", parseError);
             localStorage.removeItem('user');
             navigate('/login');
             return;
           }
         } else if (admin) {
-          console.log("⚠️ Admin detected, redirecting to admin dashboard");
           navigate('/dashboard/admin');
           return;
         } else {
-          console.log("❌ No authentication found, redirecting to login");
           navigate('/login');
           return;
         }
       } catch (error) {
-        console.error("❌ Authentication error:", error);
         localStorage.removeItem('user');
         localStorage.removeItem('admin');
         navigate('/login');
@@ -78,7 +63,6 @@ const StaffLayout = () => {
     checkStaffAccess();
   }, [navigate]);
 
-  /* ================== STAFF MENU ================== */
   const staffMenuItems = [
     {
       title: 'Staff Dashboard',
@@ -91,19 +75,18 @@ const StaffLayout = () => {
       path: '/dashboard/staff/my-issues',
       icon: <FaClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-   
     {
       title: 'Resolved Issues',
       path: '/dashboard/staff/resolved-issues',
       icon: <FaCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
     },
-    
-    
+    {
+      title: 'Edit Profile',
+      path: '/dashboard/staff/edit-profile',
+      icon: <FaUserEdit className="w-4 h-4 sm:w-5 sm:h-5" />
+    },
   ];
 
- 
-
-  /* ================== LOADING ================== */
   if (!staffData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -117,10 +100,7 @@ const StaffLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-  
-
       <div className="flex">
-        {/* Mobile Menu Button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="lg:hidden fixed left-4 top-20 z-50 p-2 bg-blue-600 text-white rounded-md shadow-lg hover:bg-blue-700 transition-colors"
@@ -128,13 +108,11 @@ const StaffLayout = () => {
           {sidebarOpen ? <FaTimes /> : <FaBars />}
         </button>
 
-        {/* Sidebar */}
         <aside
           className={`bg-white shadow-lg transition-all duration-300 ${
             sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full'
           } lg:translate-x-0 lg:w-64 fixed lg:static top-0 left-0 h-screen z-40 overflow-y-auto`}
         >
-          {/* Header */}
           <div className="p-4 border-b">
             <div className="flex items-center gap-2 mb-3">
               <FaUserTie className="w-5 h-5 text-blue-600" />
@@ -154,13 +132,15 @@ const StaffLayout = () => {
                 <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">
                   Staff Member
                 </span>
-              
-              
+                {staffData.department && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 font-medium">
+                    {staffData.department}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Menu */}
           <nav className="p-3 space-y-1">
             {staffMenuItems.map(item => (
               <NavLink
@@ -184,7 +164,6 @@ const StaffLayout = () => {
             ))}
           </nav>
 
-          {/* Footer */}
           <div className="p-4 border-t border-gray-200 mt-auto">
             <div className="text-center">
               <button
@@ -198,13 +177,11 @@ const StaffLayout = () => {
           </div>
         </aside>
 
-        {/* Content Area */}
         <main className="flex-1 p-4 lg:p-6 lg:ml-64">
           <Outlet />
         </main>
       </div>
 
-      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"

@@ -43,8 +43,6 @@ const RejectIssue = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        console.log("🔍 Starting admin check...");
-
         // Method 1: Check localStorage first
         let user = null;
         const userStr = localStorage.getItem('user');
@@ -52,10 +50,8 @@ const RejectIssue = () => {
         if (userStr) {
           try {
             user = JSON.parse(userStr);
-            console.log("Found user in localStorage:", user);
             
             if (user.role === "admin" || user.email === "admin@example.com") {
-              console.log("✅ Admin found in localStorage");
               setIsAdmin(true);
               setUserInfo(user);
               loadData();
@@ -67,14 +63,12 @@ const RejectIssue = () => {
         }
 
         // Method 2: Check all localStorage keys
-        console.log("🔄 Scanning localStorage for admin credentials...");
         const allKeys = Object.keys(localStorage);
         for (const key of allKeys) {
           try {
             const value = localStorage.getItem(key);
             if (value && typeof value === 'string') {
               if (value.includes("admin@example.com") || value.includes('"role":"admin"')) {
-                console.log("✅ Found admin in localStorage key:", key);
                 try {
                   const parsed = JSON.parse(value);
                   setIsAdmin(true);
@@ -100,14 +94,12 @@ const RejectIssue = () => {
         }
 
         // Method 3: Check MongoDB API directly
-        console.log("📡 Checking MongoDB API for admin user...");
         try {
           const response = await fetch(`https://public-infra-report-server.vercel.app/users/admin@example.com`);
           if (response.ok) {
             const data = await response.json();
             
             if (data.success && data.user && data.user.role === "admin") {
-              console.log("✅ Admin found in MongoDB:", data.user);
               setIsAdmin(true);
               setUserInfo(data.user);
               localStorage.setItem('user', JSON.stringify(data.user));
@@ -119,7 +111,6 @@ const RejectIssue = () => {
           console.error("Error fetching from MongoDB:", error);
         }
 
-        console.log("❌ No admin user found.");
         setIsAdmin(false);
         setLoading(false);
 
@@ -152,7 +143,6 @@ const RejectIssue = () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
-      console.log("Pending issues fetched:", data.issues?.length || 0);
       
       if (data.success) {
         setPendingIssues(data.issues || []);
@@ -172,7 +162,6 @@ const RejectIssue = () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();
-      console.log("Rejected issues fetched:", data.issues?.length || 0);
       
       if (data.success) {
         setRejectedIssues(data.issues || []);
@@ -245,11 +234,6 @@ const RejectIssue = () => {
     }
 
     const currentUserId = getCurrentUserId();
-    console.log("Attempting to reject issue:", {
-      issueId: selectedIssue._id,
-      userId: currentUserId,
-      reason: rejectionReason.trim()
-    });
 
     setRejecting({ [selectedIssue._id]: true });
 
@@ -266,7 +250,6 @@ const RejectIssue = () => {
       });
 
       const data = await response.json();
-      console.log("Rejection API response:", data);
 
       if (data.success) {
         showNotification("Issue rejected successfully! Refreshing data...");
@@ -286,7 +269,6 @@ const RejectIssue = () => {
           } 
         });
         window.dispatchEvent(event);
-        console.log("✅ Dispatched issue-rejected event");
         
         // Then refresh from server to ensure sync
         setTimeout(() => {
@@ -296,11 +278,10 @@ const RejectIssue = () => {
         closeRejectModal();
       } else {
         showNotification(data.message || "Failed to reject issue", "error");
-        console.error("Rejection failed:", data);
       }
     } catch (error) {
       console.error("Error rejecting issue:", error);
-      showNotification("Error rejecting issue. Please check console.", "error");
+      showNotification("Error rejecting issue", "error");
     } finally {
       setRejecting({ [selectedIssue._id]: false });
     }
@@ -314,7 +295,6 @@ const RejectIssue = () => {
     }
 
     const currentUserId = getCurrentUserId();
-    console.log("Attempting to undo rejection for issue:", issueId, "userId:", currentUserId);
 
     setRejecting({ [issueId]: true });
 
@@ -328,7 +308,6 @@ const RejectIssue = () => {
       });
 
       const data = await response.json();
-      console.log("Undo rejection API response:", data);
 
       if (data.success) {
         showNotification("Rejection undone successfully! Refreshing data...");
@@ -351,7 +330,6 @@ const RejectIssue = () => {
             } 
           });
           window.dispatchEvent(event);
-          console.log("✅ Dispatched issue-updated event");
           
           // Then refresh from server
           setTimeout(() => {
@@ -360,11 +338,10 @@ const RejectIssue = () => {
         }
       } else {
         showNotification(data.message || "Failed to undo rejection", "error");
-        console.error("Undo rejection failed:", data);
       }
     } catch (error) {
       console.error("Error undoing rejection:", error);
-      showNotification("Error undoing rejection. Please check console.", "error");
+      showNotification("Error undoing rejection", "error");
     } finally {
       setRejecting({ [issueId]: false });
     }
@@ -428,7 +405,6 @@ const RejectIssue = () => {
   // Direct admin login
   const directAdminLogin = async () => {
     try {
-      console.log("Attempting direct admin login...");
       const response = await fetch(`https://public-infra-report-server.vercel.app/users/admin@example.com`);
       const data = await response.json();
       
@@ -501,7 +477,7 @@ const RejectIssue = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   isAdmin ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                 }`}>
-                  {isAdmin ? "✅ ADMIN" : "❌ NOT ADMIN"}
+                  {isAdmin ? "ADMIN" : "NOT ADMIN"}
                 </span>
                 <span className="text-sm text-gray-600">
                   {userInfo?.email || "No user logged in"}
@@ -530,16 +506,16 @@ const RejectIssue = () => {
                 <>
                   <button
                     onClick={directAdminLogin}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
                   >
-                    🔑 Login as Admin
+                    Login as Admin
                   </button>
                   
                   <button
                     onClick={setTestAdmin}
                     className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
                   >
-                    ⚠️ Test Admin
+                    Test Admin
                   </button>
                 </>
               )}
@@ -891,14 +867,14 @@ const RejectIssue = () => {
                   onClick={directAdminLogin}
                   className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  🔑 Login as admin@example.com
+                  Login as admin@example.com
                 </button>
                 
                 <button
                   onClick={setTestAdmin}
                   className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
                 >
-                  ⚠️ Set Test Admin (Development Only)
+                  Set Test Admin (Development Only)
                 </button>
                 
                 <div className="pt-4">
@@ -906,7 +882,7 @@ const RejectIssue = () => {
                     to="/dashboard"
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors inline-block"
                   >
-                    ← Back to Dashboard
+                    Back to Dashboard
                   </NavLink>
                 </div>
               </div>

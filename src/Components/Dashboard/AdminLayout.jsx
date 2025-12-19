@@ -1,4 +1,4 @@
-// AdminLayout.jsx
+
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
@@ -11,7 +11,7 @@ import {
   FaUserTimes,
   FaBars,
   FaTimes,
-  FaHome // Added FaHome import
+  FaHome 
 } from 'react-icons/fa';
 
 
@@ -20,7 +20,7 @@ const AdminLayout = () => {
   const [adminData, setAdminData] = useState(null);
   const navigate = useNavigate();
 
-  /* ================== AUTH GUARD ================== */
+ 
   useEffect(() => {
     const admin = localStorage.getItem('admin');
     const user = localStorage.getItem('user');
@@ -44,7 +44,7 @@ const AdminLayout = () => {
     }
   }, [navigate]);
 
-  /* ================== ADMIN MENU ================== */
+  // admin menu
   const adminMenuItems = [
     {
       title: 'Admin Dashboard',
@@ -86,7 +86,7 @@ const AdminLayout = () => {
 
  
 
-  /* ================== LOADING ================== */
+  
   if (!adminData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
